@@ -2,5 +2,6 @@
     "CONTROLLER_HOST": "controller host here",
     "CONTROLLER_PORT": 123,
     "NODE_HOST": "node host here",
-    "NODE_PORT": 123
+    "NODE_PORT": 123,
+    "NODE_ID":"node-1"
 }

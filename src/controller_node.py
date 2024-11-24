@@ -1,51 +1,63 @@
 import asyncio
-from node_common import start_node, load_config, handle_connection, send_user_input, connect_to_peer, listen_for_messages
+import json
 
-config = load_config()
+# Load configuration from config.json
+with open('config.json', 'r') as f:
+    config = json.load(f)
 
-HOST = config["CONTROLLER_HOST"]
-PORT = config["CONTROLLER_PORT"]
+CONTROLLER_HOST = config['CONTROLLER_HOST']
+CONTROLLER_PORT = config['CONTROLLER_PORT']
 
-connected_nodes = {}
+# Dictionary to store node information
+nodes_info = {}
 
-async def store_node_info(addr, message, writer):
-    if addr not in connected_nodes:
-        print(f"Storing node info: {message} from {addr}")
-        connected_nodes[addr] = writer
-        await connect_to_first_peer(message)
-
-async def connect_to_first_peer(message):
-    global peer_connection
-    try:
-        peer_host, peer_port = message.split(':')
-        peer_connection = await connect_to_peer(peer_host, int(peer_port), "Controller Node")
-        reader, writer = peer_connection
-        asyncio.create_task(listen_for_messages(reader, writer, "Controller Node"))
-        asyncio.create_task(send_user_input(writer, "Controller Node"))
-    except ValueError as e:
-        print(f"Error parsing message '{message}': {e}")
-
-async def broadcast_message(message):
-    for addr, writer in connected_nodes.items():
-        writer.write(message.encode())
-        await writer.drain()
-        print(f"Controller Node sent to {addr}: {message}")
-
-async def send_user_input(writer, node_name):
-    loop = asyncio.get_running_loop()
-    while True:
-        message = await loop.run_in_executor(None, input, f"{node_name} > ")
-        await broadcast_message(message)
-
-async def start_controller_node():
-    server = await asyncio.start_server(lambda r, w: handle_connection(r, w, "Controller Node", store_node_info), HOST, PORT)
-    print(f"Controller Node listening on {HOST}:{PORT}")
+async def handle_client(reader, writer):
+    addr = writer.get_extra_info('peername')
+    print(f"Received connection from {addr}")
     
-    asyncio.create_task(server.serve_forever())
-
-    # Keep the node running
+    # Read node information from the client
+    data = await reader.read(100)
+    node_info = json.loads(data.decode())
+    
+    # Save node information if not already saved
+    node_id = node_info['NODE_ID']
+    if node_id not in nodes_info:
+        nodes_info[node_id] = node_info
+        print(f"Saved node info: {node_info}")
+        print("All nodes' info:")
+        for node in nodes_info.values():
+            print(node)
+        
+        # Send updated nodes info to all connected nodes
+        for node in nodes_info.values():
+            await send_nodes_info(node)
+    else:
+        print(f"Node {node_id} is already saved.")
+    
+    # Keep the connection open
     while True:
-        await asyncio.sleep(1)
+        data = await reader.read(100)
+        if not data:
+            break
+    writer.close()
+    await writer.wait_closed()
 
-if __name__ == "__main__":
-    asyncio.run(start_controller_node())
+async def send_nodes_info(node):
+    try:
+        reader, writer = await asyncio.open_connection(node['NODE_HOST'], node['NODE_PORT'])
+        writer.write(json.dumps(nodes_info).encode())
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+    except Exception as e:
+        print(f"Failed to send nodes info to {node['NODE_ID']}: {e}")
+
+async def main():
+    server = await asyncio.start_server(handle_client, CONTROLLER_HOST, CONTROLLER_PORT)
+    addr = server.sockets[0].getsockname()
+    print(f'Serving on {addr}')
+
+    async with server:
+        await server.serve_forever()
+
+asyncio.run(main())
