@@ -1,0 +1,6 @@
+{
+    "host": "add node's host here",
+    "port": "node's port here",
+    "peer_host": "contoller's host here",
+    "peer_port": "controller's port here"
+}
