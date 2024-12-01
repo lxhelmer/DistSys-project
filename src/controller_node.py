@@ -1,63 +1,67 @@
-import asyncio
+import socket
+import threading
 import json
 
-# Load configuration from config.json
-with open('config.json', 'r') as f:
-    config = json.load(f)
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
 
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 
-# Dictionary to store node information
-nodes_info = {}
+NODES = []
 
-async def handle_client(reader, writer):
-    addr = writer.get_extra_info('peername')
-    print(f"Received connection from {addr}")
-    
-    # Read node information from the client
-    data = await reader.read(100)
-    node_info = json.loads(data.decode())
-    
-    # Save node information if not already saved
-    node_id = node_info['NODE_ID']
-    if node_id not in nodes_info:
-        nodes_info[node_id] = node_info
-        print(f"Saved node info: {node_info}")
-        print("All nodes' info:")
-        for node in nodes_info.values():
-            print(node)
-        
-        # Send updated nodes info to all connected nodes
-        for node in nodes_info.values():
-            await send_nodes_info(node)
-    else:
-        print(f"Node {node_id} is already saved.")
-    
-    # Keep the connection open
-    while True:
-        data = await reader.read(100)
-        if not data:
-            break
-    writer.close()
-    await writer.wait_closed()
-
-async def send_nodes_info(node):
+def handle_client_connection(client_socket):
     try:
-        reader, writer = await asyncio.open_connection(node['NODE_HOST'], node['NODE_PORT'])
-        writer.write(json.dumps(nodes_info).encode())
-        await writer.drain()
-        writer.close()
-        await writer.wait_closed()
-    except Exception as e:
-        print(f"Failed to send nodes info to {node['NODE_ID']}: {e}")
+        while True:
+            data = client_socket.recv(1024)
+            if not data:
+                break
+            node_info = json.loads(data.decode('utf-8'))
+            print(f"Received node info: {node_info}")
+            update_nodes_list(node_info)
+            send_nodes_list_to_all()
+    except socket.error as e:
+        print(f"Socket error: {e}")
+    finally:
+        client_socket.close()
 
-async def main():
-    server = await asyncio.start_server(handle_client, CONTROLLER_HOST, CONTROLLER_PORT)
-    addr = server.sockets[0].getsockname()
-    print(f'Serving on {addr}')
+def listen_for_connection(host, port):
+    try:
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((host, port))
+        server_socket.listen(5)
+        print(f"Listening on {host}:{port}")
+        
+        while True:
+            client_socket, addr = server_socket.accept()
+            print(f"Connection from {addr}")
+            client_thread = threading.Thread(target=handle_client_connection, args=(client_socket,))
+            client_thread.start()
+    except socket.error as e:
+        print(f"Socket error: {e}")
 
-    async with server:
-        await server.serve_forever()
+def update_nodes_list(node_info):
+    global NODES
+    if node_info not in NODES:
+        NODES.append(node_info)
+        print(f"Node added: {node_info}")
+    else:
+        print(f"Node already in list: {node_info}")
 
-asyncio.run(main())
+def send_nodes_list_to_all():
+    global NODES
+    nodes_list_json = json.dumps(NODES)
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(nodes_list_json.encode('utf-8'))
+            s.close()
+            print(f"Sent nodes list to {node['NODE_ID']} at {node['HOST']}:{node['PORT']}")
+            print(NODES)
+        except socket.error as e:
+            print(f"Socket error: {e}")
+
+if __name__ == '__main__':
+    listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
+    listener_thread.start()
