@@ -20,9 +20,8 @@ def handle_client_connection(client_socket):
             if not data:
                 break
             try:
-                node_info_list = json.loads(data.decode('utf-8'))
-                #print(f"Received node info: {node_info_list}")
-                update_nodes_list(node_info_list)
+                message = json.loads(data.decode('utf-8'))
+                read_data(message, client_socket)
             except json.JSONDecodeError:
                 message = data.decode('utf-8')
                 print(f"Received message: {message}")
@@ -31,6 +30,55 @@ def handle_client_connection(client_socket):
         print(f"Socket error: {e}")
     finally:
         client_socket.close()
+
+def read_data(data, client_socket: socket.socket):
+    print(data)
+    if data["type"] == "join_system": # received only by the controller node. may not need this here
+        pass
+    elif data["type"] == "join_ack":
+        update_nodes_list(data)
+        send_discover_to_all_nodes()
+        # client_socket.close()
+    elif data["type"] == "discover_node":
+        send_discover_ack(data)
+    elif data["type"] == "discover_ack":
+        pass
+    elif data["type"] == "client_pause":
+        pass
+    elif data["type"] == "client_play":
+        pass
+    elif data["type"] == "client_stop":
+        pass
+    elif data["type"] == "init_playback":
+        pass
+    elif data["type"] == "ack_playback":
+        pass
+    elif data["type"] == "confirm_playback":
+        pass
+    else:
+        print("Unidentified message")
+
+def send_discover_to_all_nodes():
+    for node in NODES:
+        listener_thread = threading.Thread(target=send_discover_to_node, args=(node,))
+        listener_thread.start()
+
+def send_discover_to_node(node):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((node["HOST"], node["PORT"]))
+    print("Sending discover message to node:", node["NODE_ID"])
+    s.sendall(json.dumps({"type": "discover_node", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
+    handle_client_connection(s)
+
+def send_discover_ack(data):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((data["HOST"], data["PORT"]))
+    print("Received discover message from node:", data["NODE_ID"])
+    s.sendall(json.dumps({"type": "discover_ack", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
+    handle_client_connection(s)
+
+def handle_discover_ack(data):
+    print("received discover ack", data)
 
 def listen_for_connection(host, port):
     try:
@@ -48,8 +96,9 @@ def listen_for_connection(host, port):
     except socket.error as e:
         print(f"Socket error: {e}")
 
-def update_nodes_list(node_info):
+def update_nodes_list(data):
     global NODES
+    node_info = data["node_details"]
     NODES = []
     for node in node_info:
         if node['NODE_ID'] != NODE_ID:
@@ -58,7 +107,7 @@ def update_nodes_list(node_info):
     else:
         print(f"Node already in list or is self: {node}")
     #print(NODES)
-    prompt_for_message()
+    # prompt_for_message()
 
 def send_node_info_to_controller():
     node_info = {
@@ -69,12 +118,13 @@ def send_node_info_to_controller():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
-        s.sendall(json.dumps(node_info).encode('utf-8'))
-        data = s.recv(1024)
-        global NODES
-        NODES = json.loads(data.decode('utf-8'))
-        #print(f"Updated NODES list: {NODES}")
-        s.close()
+        s.sendall(json.dumps({"type": "join_system", "node_details": node_info}).encode('utf-8'))
+        # data = s.recv(1024)
+        # global NODES
+        # NODES = json.loads(data.decode('utf-8'))
+        # #print(f"Updated NODES list: {NODES}")
+        # s.close()
+        handle_client_connection(s)
     except socket.error as e:
         print(f"Socket error: {e}")
 
