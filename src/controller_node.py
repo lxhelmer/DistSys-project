@@ -105,37 +105,39 @@ def send_nodes_list_to_all():
 
 def initiate_playback(content_id, action, scheduled_time):
     global NODES
+    while True:
+        time.sleep(10)
 
-    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
-    playback_message = {
-        "message_type": "init_playback",
-        "sender_id": "controller",
-        "message_id": "msg-init-playback",
-        "timestamp": time.time(),
-        "action": action,
-        "content_id": content_id,
-        "scheduled_time": scheduled_time
-    }
+        print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
+        playback_message = {
+            "message_type": "init_playback",
+            "sender_id": "controller",
+            "message_id": "msg-init-playback",
+            "timestamp": time.time(),
+            "action": action,
+            "content_id": content_id,
+            "scheduled_time": scheduled_time
+        }
 
-    # Send playback initiation message to all nodes
-    responses = []
-    for node in NODES:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((node['HOST'], node['PORT']))
-            s.sendall(json.dumps(playback_message).encode('utf-8'))
-            response = s.recv(1024)  # Wait for acknowledgment
-            responses.append(json.loads(response.decode('utf-8')))
-            s.close()
-        except socket.error as e:
-            print(f"Error communicating with {node['NODE_ID']}: {e}")
-    
-    # Check acknowledgments
-    all_ready = all(resp["answer"] == "yes" for resp in responses)
-    if all_ready:
-        confirm_playback(content_id, action, scheduled_time)
-    else:
-        print("Not all nodes are ready for playback. Cancelling playback.")
+        # Send playback initiation message to all nodes
+        responses = []
+        for node in NODES:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((node['HOST'], node['PORT']))
+                s.sendall(json.dumps(playback_message).encode('utf-8'))
+                response = s.recv(1024)  # Wait for acknowledgment
+                responses.append(json.loads(response.decode('utf-8')))
+                s.close()
+            except socket.error as e:
+                print(f"Error communicating with {node['NODE_ID']}: {e}")
+        
+        # Check acknowledgments
+        all_ready = all(resp["answer"] == "yes" for resp in responses)
+        if all_ready:
+            confirm_playback(content_id, action, scheduled_time)
+        else:
+            print("Not all nodes are ready for playback. Cancelling playback.")
 
 def confirm_playback(content_id, action, scheduled_time):
     global NODES

@@ -13,9 +13,9 @@ NODE_PORT = config['NODE_PORT']
 NODE_ID = config['NODE_ID']
 
 NODES = []
-global CURRENT_ACTION
-global CURRENT_CONTENT_ID
-global CURRENT_PLAYBACK_TIME
+CURRENT_ACTION = "dummy"
+CURRENT_CONTENT_ID = "dummy"
+CURRENT_PLAYBACK_TIME ="dummy"
 
 def handle_client_connection(client_socket):
     try:
