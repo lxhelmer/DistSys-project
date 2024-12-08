@@ -110,7 +110,7 @@ def initiate_playback(content_id, action, scheduled_time):
 
         print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
         playback_message = {
-            "message_type": "init_playback",
+            "type": "init_playback",
             "sender_id": "controller",
             "message_id": "msg-init-playback",
             "timestamp": time.time(),
@@ -127,7 +127,16 @@ def initiate_playback(content_id, action, scheduled_time):
                 s.connect((node['HOST'], node['PORT']))
                 s.sendall(json.dumps(playback_message).encode('utf-8'))
                 response = s.recv(1024)  # Wait for acknowledgment
+                if not response:
+                    print(f"No response from node {node['NODE_ID']}")
+                    continue
                 responses.append(json.loads(response.decode('utf-8')))
+                try:
+                    response_data = json.loads(response.decode('utf-8'))
+                    responses.append(response_data)
+                except json.JSONDecodeError as e:
+                    print(f"Invalid JSON response from node {node['NODE_ID']}: {response}. Error: {e}")
+                
                 s.close()
             except socket.error as e:
                 print(f"Error communicating with {node['NODE_ID']}: {e}")
@@ -144,7 +153,7 @@ def confirm_playback(content_id, action, scheduled_time):
 
     print(f"Confirming playback: {action} for content {content_id} at {scheduled_time}")
     confirmation_message = {
-        "message_type": "confirm_playback",
+        "type": "confirm_playback",
         "sender_id": "controller",
         "message_id": "msg-confirm-playback",
         "timestamp": time.time(),

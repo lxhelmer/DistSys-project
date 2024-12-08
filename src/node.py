@@ -162,7 +162,7 @@ def handle_init_playback(data):
 
     # Send acknowledgment back to the initiating node
     ack_message = {
-        "message_type": "ack_playback",
+        "type": "ack_playback",
         "sender_id": NODE_ID,
         "message_id": "msg-ack-playback",
         "init_message_id": data["message_id"],
@@ -173,6 +173,7 @@ def handle_init_playback(data):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        print(f"Sending acknowledgment: {ack_message}")
         s.sendall(json.dumps(ack_message).encode('utf-8'))
         s.close()
     except socket.error as e:
@@ -205,7 +206,7 @@ def share_state_with_neighbors():
     global CURRENT_PLAYBACK_TIME
     while True:
         state_message = {
-            "message_type": "state_update",
+            "type": "state_update",
             "node_id": NODE_ID,
             "state": {
                 "action": CURRENT_ACTION,
