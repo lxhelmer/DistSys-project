@@ -1,7 +1,7 @@
 {
-    "CONTROLLER_HOST": "localhost",
-    "CONTROLLER_PORT": 9090,
-    "NODE_HOST": "localhost",
-    "NODE_PORT": 9092,
-    "NODE_ID":"node-2"
+    "CONTROLLER_HOST": "svm-11.cs.helsinki.fi",
+    "CONTROLLER_PORT": 64552,
+    "NODE_HOST": "svm-11-2.cs.helsinki.fi",
+    "NODE_PORT": 9542,
+    "NODE_ID":"node-1"
 }

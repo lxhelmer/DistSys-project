@@ -2,6 +2,8 @@ import socket
 import threading
 import json
 
+import time
+
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
 
@@ -53,6 +55,8 @@ def read_data(data, client_socket):
         pass
     elif data["type"] == "confirm_playback":
         pass
+    elif data["type"] == "state_update":
+        pass
     else:
         print("Unidentified message")
 
@@ -98,6 +102,70 @@ def send_nodes_list_to_all():
         except socket.error as e:
             print(f"Socket error: {e}")
 
+
+def initiate_playback(content_id, action, scheduled_time):
+    global NODES
+
+    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
+    playback_message = {
+        "message_type": "init_playback",
+        "sender_id": "controller",
+        "message_id": "msg-init-playback",
+        "timestamp": time.time(),
+        "action": action,
+        "content_id": content_id,
+        "scheduled_time": scheduled_time
+    }
+
+    # Send playback initiation message to all nodes
+    responses = []
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(playback_message).encode('utf-8'))
+            response = s.recv(1024)  # Wait for acknowledgment
+            responses.append(json.loads(response.decode('utf-8')))
+            s.close()
+        except socket.error as e:
+            print(f"Error communicating with {node['NODE_ID']}: {e}")
+    
+    # Check acknowledgments
+    all_ready = all(resp["answer"] == "yes" for resp in responses)
+    if all_ready:
+        confirm_playback(content_id, action, scheduled_time)
+    else:
+        print("Not all nodes are ready for playback. Cancelling playback.")
+
+def confirm_playback(content_id, action, scheduled_time):
+    global NODES
+
+    print(f"Confirming playback: {action} for content {content_id} at {scheduled_time}")
+    confirmation_message = {
+        "message_type": "confirm_playback",
+        "sender_id": "controller",
+        "message_id": "msg-confirm-playback",
+        "timestamp": time.time(),
+        "action": action,
+        "content_id": content_id,
+        "scheduled_time": scheduled_time
+    }
+
+    # Broadcast confirmation message to all nodes
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(confirmation_message).encode('utf-8'))
+            s.close()
+        except socket.error as e:
+            print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
+
+
+
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
+    listener_thread.start()
+
+    listener_thread = threading.Thread(target=initiate_playback, args=("video123", "play", time.time() + 10))
     listener_thread.start()

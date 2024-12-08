@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+import time 
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
@@ -12,6 +13,9 @@ NODE_PORT = config['NODE_PORT']
 NODE_ID = config['NODE_ID']
 
 NODES = []
+global CURRENT_ACTION
+global CURRENT_CONTENT_ID
+global CURRENT_PLAYBACK_TIME
 
 def handle_client_connection(client_socket):
     try:
@@ -50,11 +54,13 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
-        pass
+        handle_init_playback(data)
     elif data["type"] == "ack_playback":
         pass
     elif data["type"] == "confirm_playback":
-        pass
+        handle_confirm_playback(data)
+    elif data["type"] == "state_update":
+        handle_state_update(data)
     else:
         print("Unidentified message")
 
@@ -77,6 +83,7 @@ def send_discover_ack(data):
     s.sendall(json.dumps({"type": "discover_ack", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
     handle_client_connection(s)
 
+
 def handle_discover_ack(data):
     print("received discover ack", data)
 
@@ -87,7 +94,7 @@ def listen_for_connection(host, port):
         server_socket.bind((host, port))
         server_socket.listen(5)
         print(f"Listening on {host}:{port}")
-        
+
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
@@ -133,7 +140,7 @@ def prompt_for_message():
     message = input()
     send_message_to_all_nodes(message)
 
-def send_message_to_all_nodes(message):  
+def send_message_to_all_nodes(message):
     for node in NODES:
         try:
             #print(node)
@@ -146,8 +153,89 @@ def send_message_to_all_nodes(message):
             print(f"Socket error: {e}")
     prompt_for_message()  # Prompt for a new message after sending to all nodes
 
+def handle_init_playback(data):
+    print(f"Received playback initiation: {data}")
+
+    # Check if the video exists and if the node is ready
+    #need to add this will discuss video_exists = check_video(data["content_id"])
+    node_ready = True
+
+    # Send acknowledgment back to the initiating node
+    ack_message = {
+        "message_type": "ack_playback",
+        "sender_id": NODE_ID,
+        "message_id": "msg-ack-playback",
+        "init_message_id": data["message_id"],
+        "timestamp": time.time(),
+        "answer": "yes" #if video_exists and node_ready else "no"
+    }
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        s.sendall(json.dumps(ack_message).encode('utf-8'))
+        s.close()
+    except socket.error as e:
+        print(f"Error sending ack_playback to controller: {e}")
+
+def handle_confirm_playback(data):
+    global CURRENT_ACTION
+    global CURRENT_PLAYBACK_TIME
+    global CURRENT_CONTENT_ID
+    print(f"Confirmed playback received: {data}")
+    scheduled_time = data["scheduled_time"]
+
+    # Wait until the scheduled time to start playback
+    time_to_wait = scheduled_time - time.time()
+    if time_to_wait > 0:
+        time.sleep(time_to_wait)
+
+    # Execute the playback action
+    CURRENT_ACTION=data["action"]
+    CURRENT_CONTENT_ID = data["content_id"]
+    CURRENT_PLAYBACK_TIME = data["scheduled_time"]
+    #execute_playback(data["action"], data["content_id"])  #  Need to add this function on how to run the video
+    #for now just printing
+    print("Executing the Playback Function.")
+
+def share_state_with_neighbors():
+    global NODES
+    global CURRENT_ACTION
+    global CURRENT_CONTENT_ID
+    global CURRENT_PLAYBACK_TIME
+    while True:
+        state_message = {
+            "message_type": "state_update",
+            "node_id": NODE_ID,
+            "state": {
+                "action": CURRENT_ACTION,
+                "content_id": CURRENT_CONTENT_ID,
+                "current_time": CURRENT_PLAYBACK_TIME              }
+        }
+
+        # Send state to all neighbors
+        for node in NODES:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((node['HOST'], node['PORT']))
+                s.sendall(json.dumps(state_message).encode('utf-8'))
+                s.close()
+            except socket.error as e:
+             print(f"Error sharing state with {node['NODE_ID']}: {e}")
+
+        time.sleep(10)  # Share state every 10 seconds
+
+def handle_state_update(data):
+    print(f"State update received from {data['node_id']}: {data['state']}")
+    # Compare received state with current state
+    if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
+        print("State inconsistency detected. Resynchronizing...")
+       # synchronize_with_state(data["state"])
+
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
-    
+
     send_node_info_to_controller()
+    state_sharing_thread = threading.Thread(target=share_state_with_neighbors)
+    state_sharing_thread.start()
