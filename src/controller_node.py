@@ -2,13 +2,29 @@ import socket
 import threading
 import json
 
-with open('config.json', 'r') as config_file:
-    config = json.load(config_file)
+import time
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+import sys 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
 
+config_path = os.path.join(current_dir, '..', 'config', 'config.json')
+
+# Open and load the JSON configuration
+with open(config_path, 'r') as config_file:
+    config = json.load(config_file)
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 
 NODES = []
+receive_ack =[]
+ready_count=0
+
+# Shared resources
+playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
+active_playback_request_threads = 0  # Counter for active threads
+lock = threading.Lock()  # Ensure thread-safe updates to the counter
 
 def handle_client_connection(client_socket):
     try:
@@ -29,7 +45,9 @@ def handle_client_connection(client_socket):
 
 
 def read_data(data, client_socket):
+    global NODES
     print(data)
+    
     if data["type"] == "join_system": # received only by the controller node
         print("Received join request from", data)
         update_nodes_list(data)
@@ -44,21 +62,27 @@ def read_data(data, client_socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        pass
+        initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id="controller", node_host=CONTROLLER_HOST, node_port=CONTROLLER_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
-        pass
+        handle_init_playback(data)
     elif data["type"] == "ack_playback":
-        pass
+        print("Receive Acknowledgment")
+        handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
+        handle_confirm_playback(data)
+    elif data["type"] == "state_update":
         pass
     else:
         print("Unidentified message")
 
 def reply_with_node_details(client_socket: socket.socket):
+    global NODES
+    NODES.append({'HOST': CONTROLLER_HOST, 'PORT': CONTROLLER_PORT, 'NODE_ID': "controller"})
     client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
     print("sent data")
+    client_socket.close()
 
 def listen_for_connection(host, port):
     try:
@@ -97,6 +121,7 @@ def send_nodes_list_to_all():
             print(NODES)
         except socket.error as e:
             print(f"Socket error: {e}")
+
 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))

@@ -1,8 +1,17 @@
 import socket
 import threading
 import json
+import time 
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+import sys 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
 
-with open('config.json', 'r') as config_file:
+config_path = os.path.join(current_dir, '..', 'config', 'config.json')
+
+# Open and load the JSON configuration
+with open(config_path, 'r') as config_file:
     config = json.load(config_file)
 
 CONTROLLER_HOST = config['CONTROLLER_HOST']
@@ -11,7 +20,17 @@ NODE_HOST = config['NODE_HOST']
 NODE_PORT = config['NODE_PORT']
 NODE_ID = config['NODE_ID']
 
+CURRENT_ACTION = "dummy"
+CURRENT_CONTENT_ID = "dummy"
+CURRENT_PLAYBACK_TIME ="dummy"
+
 NODES = []
+receive_ack =[]
+ready_count=0
+
+# Shared resources
+playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
+active_playback_request_threads = 0  # Counter for active threads
 
 def handle_client_connection(client_socket):
     try:
@@ -32,6 +51,7 @@ def handle_client_connection(client_socket):
         client_socket.close()
 
 def read_data(data, client_socket: socket.socket):
+    global NODES
     print(data)
     if data["type"] == "join_system": # received only by the controller node. may not need this here
         pass
@@ -42,19 +62,22 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "discover_node":
         send_discover_ack(data)
     elif data["type"] == "discover_ack":
-        pass
+        handle_discover_ack(data)
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        pass
+        initiate_playback(data["content_id"], data["action"], data["time_after"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
-        pass
+        handle_init_playback(data)
     elif data["type"] == "ack_playback":
-        pass
+        print("Receive Acknowledgment")
+        handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
-        pass
+        handle_confirm_playback(data)
+    elif data["type"] == "state_update":
+        handle_state_update
     else:
         print("Unidentified message")
 
@@ -77,6 +100,7 @@ def send_discover_ack(data):
     s.sendall(json.dumps({"type": "discover_ack", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
     handle_client_connection(s)
 
+
 def handle_discover_ack(data):
     print("received discover ack", data)
 
@@ -87,7 +111,7 @@ def listen_for_connection(host, port):
         server_socket.bind((host, port))
         server_socket.listen(5)
         print(f"Listening on {host}:{port}")
-        
+
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
@@ -106,7 +130,7 @@ def update_nodes_list(data):
             #print(f"Node added: {node}")
     else:
         print(f"Node already in list or is self: {node}")
-    #print(NODES)
+    print("all", NODES)
     # prompt_for_message()
 
 def send_node_info_to_controller():
@@ -133,7 +157,7 @@ def prompt_for_message():
     message = input()
     send_message_to_all_nodes(message)
 
-def send_message_to_all_nodes(message):  
+def send_message_to_all_nodes(message):
     for node in NODES:
         try:
             #print(node)
@@ -146,8 +170,46 @@ def send_message_to_all_nodes(message):
             print(f"Socket error: {e}")
     prompt_for_message()  # Prompt for a new message after sending to all nodes
 
+
+
+
+def share_state_with_neighbors():
+    global NODES
+    global CURRENT_ACTION
+    global CURRENT_CONTENT_ID
+    global CURRENT_PLAYBACK_TIME
+    state_message = {
+        "type": "state_update",
+        "node_id": NODE_ID,
+        "state": {
+            "action": CURRENT_ACTION,
+            "content_id": CURRENT_CONTENT_ID,
+            "current_time": CURRENT_PLAYBACK_TIME              }
+    }
+
+    # Send state to all neighbors
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(state_message).encode('utf-8'))
+            s.close()
+            print("sharing own state", state_message)
+        except socket.error as e:
+            print(f"Error sharing state with {node['NODE_ID']}: {e}")
+
+    threading.Timer(10, share_state_with_neighbors).start()
+
+def handle_state_update(data):
+    print(f"State update received from {data['node_id']}: {data['state']}")
+    # Compare received state with current state
+    if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
+        print("State inconsistency detected. Resynchronizing...")
+       # synchronize_with_state(data["state"])
+    threading.Timer(10, share_state_with_neighbors).start()
+
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
-    
+
     send_node_info_to_controller()
