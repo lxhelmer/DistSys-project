@@ -167,6 +167,8 @@ def initiate_playback(content_id, action, scheduled_time):
 def handle_playback_ack(data):
     global receive_ack
     global NODES
+    global active_threads
+    global threads_completed
     receive_ack.append(data["answer"])
 
     # Safely decrement the counter
