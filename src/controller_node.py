@@ -101,6 +101,7 @@ def send_nodes_list_to_all():
 
 
 def initiate_playback(content_id, action, scheduled_time):
+    time.sleep(10)
     global NODES
     global receive_ack
     receive_ack=[]
