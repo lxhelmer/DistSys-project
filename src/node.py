@@ -55,8 +55,6 @@ def read_data(data, client_socket: socket.socket):
         pass
     elif data["type"] == "init_playback":
         handle_init_playback(data)
-    elif data["type"] == "ack_playback":
-        pass
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
@@ -208,28 +206,27 @@ def share_state_with_neighbors():
     global CURRENT_ACTION
     global CURRENT_CONTENT_ID
     global CURRENT_PLAYBACK_TIME
-    while True:
-        state_message = {
-            "type": "state_update",
-            "node_id": NODE_ID,
-            "state": {
-                "action": CURRENT_ACTION,
-                "content_id": CURRENT_CONTENT_ID,
-                "current_time": CURRENT_PLAYBACK_TIME              }
-        }
+    state_message = {
+        "type": "state_update",
+        "node_id": NODE_ID,
+        "state": {
+            "action": CURRENT_ACTION,
+            "content_id": CURRENT_CONTENT_ID,
+            "current_time": CURRENT_PLAYBACK_TIME              }
+    }
 
-        # Send state to all neighbors
-        for node in NODES:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((node['HOST'], node['PORT']))
-                s.sendall(json.dumps(state_message).encode('utf-8'))
-                s.close()
-                print("sharing own state", state_message)
-            except socket.error as e:
-             print(f"Error sharing state with {node['NODE_ID']}: {e}")
+    # Send state to all neighbors
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(state_message).encode('utf-8'))
+            s.close()
+            print("sharing own state", state_message)
+        except socket.error as e:
+            print(f"Error sharing state with {node['NODE_ID']}: {e}")
 
-        time.sleep(10)  # Share state every 10 seconds
+    threading.Timer(10, target=share_state_with_neighbors).start()
 
 def handle_state_update(data):
     print(f"State update received from {data['node_id']}: {data['state']}")
