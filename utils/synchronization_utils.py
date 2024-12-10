@@ -170,6 +170,7 @@ def handle_confirm_playback(data):
     global CURRENT_CONTENT_ID
     print(f"Confirmed playback received: {data}")
     scheduled_time = data["scheduled_time"]
+    scheduled_time = time.time() + scheduled_time
 
     # Wait until the scheduled time to start playback
     time_to_wait = scheduled_time - time.time()

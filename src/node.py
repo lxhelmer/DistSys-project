@@ -72,6 +72,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "init_playback":
         handle_init_playback(data)
     elif data["type"] == "ack_playback":
+        print("Receive Acknowledgment")
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
