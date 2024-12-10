@@ -140,20 +140,22 @@ def initiate_playback(content_id, action, scheduled_time):
             s.close()
         except socket.error as e:
             print(f"Error communicating with {node['NODE_ID']}: {e}")
+    # Reschedule the function to run again after 10 seconds
+    threading.Timer(10, initiate_playback, args=(content_id, action, time.time() + 10)).start()
           
 def handle_playback_ack(data):
     global receive_ack
     global NODES
     receive_ack.append(data["answer"])
 
-    # Check acknowledgments
-    all_ready = [1  for resp in receive_ack if resp == "yes"]
-    print(all_ready)
-    print( (len(NODES)/2 ))
-    if len(all_ready) >= (len(NODES)/2 ):
+    # Check if enough nodes are ready for playback
+    ready_count = sum(1 for ack in receive_ack if ack == "yes")
+    print(f"Ready nodes: {ready_count}/{len(NODES)}")
+
+    if ready_count >= (len(NODES) // 2):  # Check quorum
         confirm_playback(data["content_id"], data["action"], data["scheduled_time"])
     else:
-        print("Not all nodes are ready for playback. Cancelling playback.")
+        print("Not enough nodes are ready for playback. Cancelling playback.")
 
 def confirm_playback(content_id, action, scheduled_time):
     global NODES
