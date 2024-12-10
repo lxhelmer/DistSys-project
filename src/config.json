@@ -1,7 +1,7 @@
 {
     "CONTROLLER_HOST": "localhost",
-    "CONTROLLER_PORT": 9091,
-    "CONTROLLER_ID": "node-1",
+    "CONTROLLER_PORT": 9090,
+    "CONTROLLER_ID": "node-0",
     "NODE_HOST": "localhost",
     "NODE_PORT": 9093,
     "NODE_ID":"node-3",
