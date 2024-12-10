@@ -1,7 +1,10 @@
 {
     "CONTROLLER_HOST": "localhost",
-    "CONTROLLER_PORT": 9090,
+    "CONTROLLER_PORT": 9091,
+    "CONTROLLER_ID": "node-1",
     "NODE_HOST": "localhost",
-    "NODE_PORT": 9092,
-    "NODE_ID":"node-2"
+    "NODE_PORT": 9093,
+    "NODE_ID":"node-3",
+    "HEALTH_CHECK_TIMEOUT": 5,
+    "TIME_BETWEEN_HEALTH_CHECKS": 10
 }
