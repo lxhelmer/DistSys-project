@@ -4,7 +4,7 @@ import threading
 import json
 import time
 
-NODES = [{'HOST': 'svm-11.cs.helsinki.fi', 'PORT': 65442, 'NODE_ID': 'controller'}]
+NODES = [{'HOST': 'svm-11.cs.helsinki.fi', 'PORT': 64552, 'NODE_ID': 'controller'}]
 receive_ack =[]
 ready_count=0
 
