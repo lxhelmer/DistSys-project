@@ -287,7 +287,7 @@ def send_new_leader_elected_message(node, election_id):
         s.send(json.dumps({"type": "leader_elected", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "ELECTION_ID": election_id}).encode('utf-8'))
         ELECTION_DATA[election_id]["status"] = "completed"
     except socket.error as e:
-        print(f"Error connecting with node {node["NODE_ID"]}. Hence ignoring")
+        print(f"Error connecting with node {node['NODE_ID']}. Hence ignoring")
 
 def send_leader_election_message(node_host, node_port, node_id, election_id):
     try:
