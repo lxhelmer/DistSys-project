@@ -56,6 +56,7 @@ def read_data(data, client_socket):
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "ack_playback":
+        
         handle_playback_ack(data)
     elif data["type"] == "state_update":
         pass
@@ -127,12 +128,7 @@ def send_playback_request_to_node(node, playback_message):
         s.close()
     except socket.error as e:
         print(f"Error communicating with {node['NODE_ID']}: {e}")
-    finally:
-        # Safely decrement the counter
-        with lock:
-            active_threads -= 1
-            if active_threads == 0:
-                threads_completed.set()  # Signal that all threads are done
+        
 
 def initiate_playback(content_id, action, scheduled_time):
     time.sleep(10)
@@ -172,6 +168,13 @@ def handle_playback_ack(data):
     global receive_ack
     global NODES
     receive_ack.append(data["answer"])
+
+    # Safely decrement the counter
+    with lock:
+        active_threads -= 1
+        if active_threads == 0:
+            threads_completed.set()  # Signal that all threads are done
+            
     # Wait for all threads to complete
     threads_completed.wait()  # Wait until the event is set
     print("All threads have completed!")
