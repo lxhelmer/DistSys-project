@@ -39,8 +39,6 @@ ready_count=0
 playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
 active_playback_request_threads = 0  # Counter for active threads
 
-NODES = []
-
 def handle_client_connection(client_socket):
     continue_read = True
     try:
