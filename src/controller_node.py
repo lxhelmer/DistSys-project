@@ -78,8 +78,9 @@ def read_data(data, client_socket):
         print("Unidentified message")
 
 def reply_with_node_details(client_socket: socket.socket):
-    client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
+    client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES.append({'HOST': CONTROLLER_HOST, 'PORT': CONTROLLER_PORT, 'NODE_ID': 'controller'})}).encode('utf-8'))
     print("sent data")
+    client_socket.close()
 
 def listen_for_connection(host, port):
     try:
