@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 import time 
-from sys import listdir
+from os import listdir
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
@@ -60,7 +60,7 @@ def read_data(data, client_socket: socket.socket):
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
         handle_state_update
-    elif data["type"] == "file_list_update":
+    elif data["type"] == "file_update":
         handle_file_update(data)
 
     else:
