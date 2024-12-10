@@ -60,7 +60,7 @@ def read_data(data, client_socket: socket.socket):
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
         handle_state_update
-    elif data["type"] == "file_update":
+    elif data["type"] == "file_list_update":
         handle_file_update(data)
 
     else:
