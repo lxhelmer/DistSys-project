@@ -80,6 +80,7 @@ def read_data(data, client_socket):
 def reply_with_node_details(client_socket: socket.socket):
     client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
     print("sent data")
+    client_socket.close()
 
 def listen_for_connection(host, port):
     try:
