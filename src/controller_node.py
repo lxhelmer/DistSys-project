@@ -14,8 +14,8 @@ NODES = []
 receive_ack =[]
 
 # Shared resources
-threads_completed = threading.Event()  # Event to signal all threads are done
-active_threads = 0  # Counter for active threads
+playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
+active_playback_request_threads = 0  # Counter for active threads
 lock = threading.Lock()  # Ensure thread-safe updates to the counter
 
 def handle_client_connection(client_socket):
@@ -106,7 +106,7 @@ def send_nodes_list_to_all():
             print(f"Socket error: {e}")
 
 def send_playback_request_to_node(node, playback_message):
-    global active_threads
+    global active_playback_request_threads
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((node['HOST'], node['PORT']))
@@ -131,11 +131,10 @@ def send_playback_request_to_node(node, playback_message):
         
 
 def initiate_playback(content_id, action, scheduled_time):
-    time.sleep(10)
     global NODES
     global receive_ack
-    global active_threads
-    global threads_completed
+    global active_playback_request_threads
+    global playback_request_thread_completed
 
     receive_ack=[]
     print (NODES, "nodess")
@@ -160,25 +159,25 @@ def initiate_playback(content_id, action, scheduled_time):
 
     # Safely increment the counter
         with lock:
-            active_threads += 1
+            active_playback_request_threads += 1
 
     
           
 def handle_playback_ack(data):
     global receive_ack
     global NODES
-    global active_threads
-    global threads_completed
+    global active_playback_request_threads
+    global playback_request_thread_completed
     receive_ack.append(data["answer"])
 
     # Safely decrement the counter
     with lock:
-        active_threads -= 1
-        if active_threads == 0:
-            threads_completed.set()  # Signal that all threads are done
+        active_playback_request_threads -= 1
+        if active_playback_request_threads == 0:
+            playback_request_thread_completed.set()  # Signal that all threads are done
             
     # Wait for all threads to complete
-    threads_completed.wait()  # Wait until the event is set
+    playback_request_thread_completed.wait()  # Wait until the event is set
     print("All threads have completed!")
 
     # Check if enough nodes are ready for playback
@@ -223,5 +222,6 @@ if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
     listener_thread.start()
 
+    time.sleep(10)
     listener_thread = threading.Thread(target=initiate_playback, args=("video123", "play", time.time() + 10))
     listener_thread.start()
