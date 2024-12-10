@@ -46,7 +46,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "discover_node":
         send_discover_ack(data)
     elif data["type"] == "discover_ack":
-        pass
+        handle_discover_ack(data)
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
@@ -221,6 +221,7 @@ def share_state_with_neighbors():
                 s.connect((node['HOST'], node['PORT']))
                 s.sendall(json.dumps(state_message).encode('utf-8'))
                 s.close()
+                print("sharing own state", state_message)
             except socket.error as e:
              print(f"Error sharing state with {node['NODE_ID']}: {e}")
 

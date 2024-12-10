@@ -127,6 +127,7 @@ def initiate_playback(content_id, action, scheduled_time):
                 s.connect((node['HOST'], node['PORT']))
                 s.sendall(json.dumps(playback_message).encode('utf-8'))
                 response = s.recv(1024)  # Wait for acknowledgment
+                ("got ack=>", response)
                 if not response:
                     print(f"No response from node {node['NODE_ID']}")
                     continue
@@ -142,8 +143,10 @@ def initiate_playback(content_id, action, scheduled_time):
                 print(f"Error communicating with {node['NODE_ID']}: {e}")
         
         # Check acknowledgments
-        all_ready = all(resp["answer"] == "yes" for resp in responses)
-        if all_ready:
+        all_ready = [1  for resp in responses if resp["answer"] == "yes"]
+        print(all_ready)
+        print( (len(responses)/2 ))
+        if len(all_ready) >= (len(responses)/2 ):
             confirm_playback(content_id, action, scheduled_time)
         else:
             print("Not all nodes are ready for playback. Cancelling playback.")
@@ -169,6 +172,7 @@ def confirm_playback(content_id, action, scheduled_time):
             s.connect((node['HOST'], node['PORT']))
             s.sendall(json.dumps(confirmation_message).encode('utf-8'))
             s.close()
+            print("confirmation message sent")
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
 
