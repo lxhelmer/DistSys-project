@@ -1,7 +1,6 @@
 import socket
 import threading
 import json
-from sys import listdir
 
 import time
 
@@ -13,13 +12,6 @@ CONTROLLER_PORT = config['CONTROLLER_PORT']
 
 NODES = []
 FILES = []
-receive_ack =[]
-ready_count=0
-
-# Shared resources
-playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
-active_playback_request_threads = 0  # Counter for active threads
-lock = threading.Lock()  # Ensure thread-safe updates to the counter
 
 def handle_client_connection(client_socket):
     try:
@@ -41,11 +33,12 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket):
     print(data)
-    
     if data["type"] == "join_system": # received only by the controller node
         print("Received join request from", data)
         update_nodes_list(data)
         reply_with_node_details(client_socket)
+        send_file_list(client_socket)
+        
     elif data["type"] == "join_ack":
         print("Received request to pause from the user.")
         update_nodes_list(data["node-list"])
@@ -59,8 +52,12 @@ def read_data(data, client_socket):
         pass
     elif data["type"] == "client_stop":
         pass
+    elif data["type"] == "init_playback":
+        pass
     elif data["type"] == "ack_playback":
-        handle_playback_ack(data)
+        pass
+    elif data["type"] == "confirm_playback":
+        pass
     elif data["type"] == "state_update":
         pass
     else:
@@ -69,10 +66,6 @@ def read_data(data, client_socket):
 def reply_with_node_details(client_socket: socket.socket):
     client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
     print("sent data")
-
-def send_file_list(client_socket: socket.socket):
-    global FILES
-    client_socket.send(json.dumps({"type": "file_list", "file_update": FILES}).encode('utf-8'))
 
 def listen_for_connection(host, port):
     try:
@@ -112,95 +105,51 @@ def send_nodes_list_to_all():
         except socket.error as e:
             print(f"Socket error: {e}")
 
-def send_playback_request_to_node(node, playback_message):
-    global active_playback_request_threads
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5)  # Set timeout for 5 seconds
-        s.connect((node['HOST'], node['PORT']))
-        s.sendall(json.dumps(playback_message).encode('utf-8'))
-        print(f"Sent playback initiation to {node['NODE_ID']}")
-
-        # Wait for acknowledgment
-        response = s.recv(1024)
-        if not response:
-            print(f"No response from node {node['NODE_ID']}")
-            return
-
-        try:
-            response_data = json.loads(response.decode('utf-8'))
-            receive_ack.append(response_data.get("answer", "no"))
-            print(f"Received acknowledgment from {node['NODE_ID']}: {response_data}")
-        except json.JSONDecodeError as e:
-            print(f"Invalid JSON response from {node['NODE_ID']}: {response}. Error: {e}")
-        s.close()
-    except socket.error as e:
-        print(f"Error communicating with {node['NODE_ID']}: {e}")
-        
 
 def initiate_playback(content_id, action, scheduled_time):
     global NODES
-    global receive_ack
-    global active_playback_request_threads
-    global playback_request_thread_completed
+    while True:
+        time.sleep(10)
 
-    receive_ack=[]
-    print (NODES, "nodess")
+        print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
+        playback_message = {
+            "type": "init_playback",
+            "sender_id": "controller",
+            "message_id": "msg-init-playback",
+            "timestamp": time.time(),
+            "action": action,
+            "content_id": content_id,
+            "scheduled_time": scheduled_time
+        }
 
-    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
-    playback_message = {
-        "type": "init_playback",
-        "sender_id": "controller",
-        "message_id": "msg-init-playback",
-        "timestamp": time.time(),
-        "action": action,
-        "content_id": content_id,
-        "scheduled_time": scheduled_time
-    }
-
-    # Create a thread for each node
-    threads = []
-    for node in NODES:
-        thread = threading.Thread(target=send_playback_request_to_node, args=(node, playback_message))
-        thread.start()
-        threads.append(thread)
-
-    # Safely increment the counter
-        with lock:
-            active_playback_request_threads += 1
-            
-    # Wait for all threads to complete
-    playback_request_thread_completed.wait()  # Wait until the event is set
-    print("All threads have completed!")
-    threading.Timer(10, initiate_confirmation, args=(content_id, action, scheduled_time)).start()
-
-def handle_playback_ack(data):
-    global active_playback_request_threads
-    global playback_request_thread_completed
-    global ready_count
-    global receive_ack
-
-    receive_ack.append(data["answer"])
-    # Check if enough nodes are ready for playback
-    ready_count = sum(1 for ack in receive_ack if ack == "yes")
-    print(f"Ready nodes: {ready_count}/{len(NODES)}")
-    # Safely decrement the counter
-    with lock:
-        active_playback_request_threads -= 1
-        if active_playback_request_threads == 0:
-            playback_request_thread_completed.set()  # Signal that all threads are done  
-          
-def initiate_confirmation(content_id, action, scheduled_time):
-    global ready_count
-    global NODES
-    print(ready_count >= (len(NODES) // 2))
-
-    if ready_count >= (len(NODES) // 2):  # Check quorum
-        confirm_playback(content_id, action, scheduled_time)
-        # Reschedule the function to run again after 10 seconds
-        threading.Timer(10, initiate_playback, args=("video456", "play", time.time() + 10)).start()
-    else:
-        print("Not enough nodes are ready for playback. Cancelling playback.")
+        # Send playback initiation message to all nodes
+        responses = []
+        for node in NODES:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((node['HOST'], node['PORT']))
+                s.sendall(json.dumps(playback_message).encode('utf-8'))
+                response = s.recv(1024)  # Wait for acknowledgment
+                if not response:
+                    print(f"No response from node {node['NODE_ID']}")
+                    continue
+                responses.append(json.loads(response.decode('utf-8')))
+                try:
+                    response_data = json.loads(response.decode('utf-8'))
+                    responses.append(response_data)
+                except json.JSONDecodeError as e:
+                    print(f"Invalid JSON response from node {node['NODE_ID']}: {response}. Error: {e}")
+                
+                s.close()
+            except socket.error as e:
+                print(f"Error communicating with {node['NODE_ID']}: {e}")
+        
+        # Check acknowledgments
+        all_ready = all(resp["answer"] == "yes" for resp in responses)
+        if all_ready:
+            confirm_playback(content_id, action, scheduled_time)
+        else:
+            print("Not all nodes are ready for playback. Cancelling playback.")
 
 def confirm_playback(content_id, action, scheduled_time):
     global NODES
@@ -226,18 +175,15 @@ def confirm_playback(content_id, action, scheduled_time):
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
 
-def check_files():
+def check_current_files():
     global FILES
     FILES = listdir('../data')
 
-
+def  
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
     listener_thread.start()
 
-
-    time.sleep(10)
-    check_files()
-
+    check_current_files()
     listener_thread = threading.Thread(target=initiate_playback, args=("video123", "play", time.time() + 10))
     listener_thread.start()

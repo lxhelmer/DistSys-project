@@ -60,6 +60,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "state_update":
         handle_state_update
     elif data["type"] == "file_update":
+        handle_file_update(data)
 
     else:
         print("Unidentified message")
@@ -86,6 +87,9 @@ def send_discover_ack(data):
 
 def handle_discover_ack(data):
     print("received discover ack", data)
+
+def handle_file_update(data):
+    print(data)
 
 def listen_for_connection(host, port):
     try:
