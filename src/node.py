@@ -74,7 +74,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "ack_playback":
         print("Receive Acknowledgment")
         handle_playback_ack(data)
-    elif data["type"] == "confirm_playback":
+    elif data["type"] == "confirm_playback"
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
         handle_state_update
@@ -198,6 +198,7 @@ def share_state_with_neighbors():
         except socket.error as e:
             print(f"Error sharing state with {node['NODE_ID']}: {e}")
 
+sent file list
     threading.Timer(10, share_state_with_neighbors).start()
 
 def handle_state_update(data):
