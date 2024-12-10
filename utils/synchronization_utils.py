@@ -48,6 +48,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     receive_ack=[]
     NODES.extend(NODES_LIST)
     print (NODES, "nodess")
+    print(NODES_LIST)
 
 
     print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
