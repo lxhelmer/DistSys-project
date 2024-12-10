@@ -2,9 +2,12 @@ import socket
 import threading
 import json
 import time 
+import os
+import sys 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
 
-with open('config.json', 'r') as config_file:
+with open('config/config.json', 'r') as config_file:
     config = json.load(config_file)
 
 CONTROLLER_HOST = config['CONTROLLER_HOST']
