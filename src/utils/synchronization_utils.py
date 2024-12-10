@@ -44,9 +44,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     global playback_request_thread_completed
 
     receive_ack=[]
-    # NODES.extend(NODES_LIST)
-    print (NODES, "nodess")
-    print(NODES_LIST)
+    NODES = NODES_LIST
 
     print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
     playback_message = {
@@ -160,6 +158,7 @@ def confirm_playback(content_id, action, scheduled_time):
             s.close()
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
+    handle_confirm_playback(confirmation_message)
 
 def handle_confirm_playback(data):
     global CURRENT_ACTION

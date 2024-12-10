@@ -24,7 +24,6 @@ IS_CONTROLLER = False
 HEALTH_CHECK_TIMEOUT = config['HEALTH_CHECK_TIMEOUT']
 TIME_BETWEEN_HEALTH_CHECKS = config['TIME_BETWEEN_HEALTH_CHECKS']
 ELECTION_STARTED = False
-STOP_ELECTION = False
 ELECTION_DATA = {}
 
 CURRENT_ACTION = "dummy"
@@ -56,7 +55,6 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket: socket.socket):
     global ELECTION_STARTED
-    global STOP_ELECTION
     global ELECTION_DATA
     if data["type"] == "join_system": # received only by the controller node
         print("Received join request from", data)
@@ -64,9 +62,12 @@ def read_data(data, client_socket: socket.socket):
         reply_with_node_details(client_socket)
         # return False
     elif data["type"] == "join_ack":
+        print("Received join ack", data)
         update_nodes_list(data)
         send_discover_to_all_nodes()
     elif data["type"] == "discover_node":
+        if IS_CONTROLLER:
+            return
         NODES.append({'HOST': data["HOST"], 'PORT': data["PORT"], 'NODE_ID': data["NODE_ID"]})
         send_discover_ack(data)
     elif data["type"] == "discover_ack":
@@ -146,8 +147,6 @@ def send_discover_ack(data):
     s.connect((data["HOST"], data["PORT"]))
     print("Received discover message from node:", data["NODE_ID"])
     s.sendall(json.dumps({"type": "discover_ack", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
-    # handle_client_connection(s)
-    print("Writing data to file", NODES)
     with open(tempfile.gettempdir() + "/" + NODE_ID + ".json", "w") as f:
         json.dump({"NODES": NODES}, f)
 
@@ -160,8 +159,10 @@ def send_health_ack(data, client_socket):
 
 def reply_with_node_details(client_socket: socket.socket):
     global NODES
-    NODES.append({'HOST': CONTROLLER_HOST, 'PORT': CONTROLLER_PORT, 'NODE_ID': NODE_ID})
-    client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
+    temp_nodes = NODES.copy()
+    temp_nodes.append({'HOST': NODE_HOST, 'PORT': NODE_PORT, 'NODE_ID': NODE_ID})
+    print("CUrrent ndoes", NODES)
+    client_socket.send(json.dumps({"type": "join_ack", "node_details": temp_nodes}).encode('utf-8'))
 
 def listen_for_connection(host, port):
     try:
@@ -186,8 +187,8 @@ def update_nodes_list(data):
         if node['NODE_ID'] != NODE_ID:
             NODES.append(node)
             #print(f"Node added: {node}")
-    else:
-        print(f"Node already in list or is self: {node}")
+        else:
+            print(f"Node already in list or is self: {node}")
     with open(tempfile.gettempdir() + "/" + NODE_ID + ".json", "w") as f:
         json.dump({"NODES": NODES}, f)
 
@@ -254,9 +255,8 @@ def perform_health_check():
             print("Received health details from leader", message)
 
 def start_leader_election():
-    global STOP_ELECTION
     global ELECTION_DATA
-
+    global IS_CONTROLLER
     for key, value in ELECTION_DATA.items():
         if value["status"] == "started" and value["owner"] == NODE_ID:
             print("Skipping election due to ongoing election", key)
@@ -272,8 +272,8 @@ def start_leader_election():
     if ELECTION_DATA[election_id]["status"] != "started":
         print("Aborting election", election_id)
         return
-    STOP_ELECTION = False
     print("Becoming leader", NODES)
+    IS_CONTROLLER = True
     for node in NODES:
         print("Sending leader elected msg", node, election_id)
         sender_thread = threading.Thread(target=send_new_leader_elected_message, args=(node, election_id))
@@ -343,6 +343,7 @@ if __name__ == '__main__':
     listener_thread.start()
     if system_details == {}:
         if CONTROLLER_ID != NODE_ID:
+            # NODES.append({'HOST': CONTROLLER_HOST, 'PORT': CONTROLLER_PORT, 'NODE_ID': CONTROLLER_ID})
             send_node_info_to_controller()
         else:
             IS_CONTROLLER = True
@@ -352,5 +353,6 @@ if __name__ == '__main__':
         if int(CONTROLLER_ID.split("-")[1]) > int(NODE_ID.split("-")[1]):
             start_leader_election()
         else:
+            NODES = system_details["NODES"]
             print("Joining the system quietly")
 
