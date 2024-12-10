@@ -59,6 +59,8 @@ def read_data(data, client_socket: socket.socket):
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
         handle_state_update
+    elif data["type"] == "file_update":
+
     else:
         print("Unidentified message")
 
@@ -239,11 +241,14 @@ def check_files():
     global FILES
     FILES = listdir('../data')
 
+def handle_file_update(files):
+    print(files)
+
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
 
-    
+    check_files()
     state_sharing_thread = threading.Thread(target=share_state_with_neighbors)
     state_sharing_thread.start()
     send_node_info_to_controller()

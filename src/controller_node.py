@@ -72,7 +72,7 @@ def reply_with_node_details(client_socket: socket.socket):
 
 def send_file_list(client_socket: socket.socket):
     global FILES
-    client_socket.send(json.dumps({"type": "file_list", "file_list": FILES
+    client_socket.send(json.dumps({"type": "file_list", "file_update": FILES}).encode('utf-8'))
 
 def listen_for_connection(host, port):
     try:
@@ -235,6 +235,9 @@ if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
     listener_thread.start()
 
+
     time.sleep(10)
+    check_files()
+
     listener_thread = threading.Thread(target=initiate_playback, args=("video123", "play", time.time() + 10))
     listener_thread.start()
