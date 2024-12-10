@@ -110,7 +110,7 @@ def send_playback_request_to_node(node, playback_message):
     global active_playback_request_threads
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5)  # Set timeout for 5 seconds
+        s.settimeout(20)  # Set timeout for 5 seconds
         s.connect((node['HOST'], node['PORT']))
         s.sendall(json.dumps(playback_message).encode('utf-8'))
         print(f"Sent playback initiation to {node['NODE_ID']}")
@@ -130,6 +130,7 @@ def send_playback_request_to_node(node, playback_message):
         s.close()
     except socket.error as e:
         print(f"Error communicating with {node['NODE_ID']}: {e}")
+        s.close()
         
 
 def initiate_playback(content_id, action, scheduled_time):
