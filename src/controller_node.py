@@ -110,7 +110,6 @@ def send_playback_request_to_node(node, playback_message):
     global active_playback_request_threads
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(20)  # Set timeout for 5 seconds
         s.connect((node['HOST'], node['PORT']))
         s.sendall(json.dumps(playback_message).encode('utf-8'))
         print(f"Sent playback initiation to {node['NODE_ID']}")
@@ -164,9 +163,10 @@ def initiate_playback(content_id, action, scheduled_time):
         with lock:
             active_playback_request_threads += 1
             
-    # Wait for all threads to complete
-    playback_request_thread_completed.wait()  # Wait until the event is set
-    print("All threads have completed!")
+    if not playback_request_thread_completed.wait(timeout=30):  # Wait up to 10 seconds
+        print("Timeout waiting for all threads to complete.")
+
+    print("All threads have completed or timed out!")
     threading.Timer(10, initiate_confirmation, args=(content_id, action, scheduled_time)).start()
 
 def handle_playback_ack(data):
