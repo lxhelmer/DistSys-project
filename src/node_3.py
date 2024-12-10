@@ -137,7 +137,7 @@ def handle_file_update(data, client_socket):
     recv_files = sorted(data["file_list"])
     for r_file in recv_files:
         if r_file not in FILES:
-            print("asking file:",r_file)
+            print("file missing:",r_file)
 
 
 def handle_send_file(data, client_socket):
