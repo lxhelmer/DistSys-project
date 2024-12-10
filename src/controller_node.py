@@ -39,6 +39,8 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket):
     print(data)
+    global active_playback_request_threads
+    global playback_request_thread_completed
     if data["type"] == "join_system": # received only by the controller node
         print("Received join request from", data)
         update_nodes_list(data)
