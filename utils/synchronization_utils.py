@@ -4,7 +4,7 @@ import threading
 import json
 import time
 
-NODES = []
+NODES = ["controller"]
 receive_ack =[]
 ready_count=0
 
@@ -46,7 +46,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     global playback_request_thread_completed
 
     receive_ack=[]
-    NODES=NODES_LIST
+    NODES.extend(NODES_LIST)
     print (NODES, "nodess")
 
 

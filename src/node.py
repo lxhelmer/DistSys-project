@@ -65,7 +65,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES.append("controller"))
+        initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
