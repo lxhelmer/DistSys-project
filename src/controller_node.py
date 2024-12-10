@@ -54,7 +54,7 @@ def read_data(data, client_socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        pass
+        initiate_playback("video123", "play", time.time() + 10)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "ack_playback":
@@ -183,7 +183,7 @@ def handle_playback_ack(data):
     with lock:
         active_playback_request_threads -= 1
         if active_playback_request_threads == 0:
-            playback_request_thread_completed.set()  # Signal that all threads are done  
+            playback_request_thread_completed.set()  # Signal that all threads are done  i.e. Received ack form all nodes, or timeout signal from down nodes. 
           
 def initiate_confirmation(content_id, action, scheduled_time):
     global ready_count
@@ -193,7 +193,7 @@ def initiate_confirmation(content_id, action, scheduled_time):
     if ready_count >= (len(NODES) // 2):  # Check quorum
         confirm_playback(content_id, action, scheduled_time)
         # Reschedule the function to run again after 10 seconds
-        threading.Timer(10, initiate_playback, args=("video456", "play", time.time() + 10)).start()
+        #threading.Timer(10, initiate_playback, args=("video456", "play", time.time() + 10)).start()
     else:
         print("Not enough nodes are ready for playback. Cancelling playback.")
 
@@ -225,8 +225,4 @@ def confirm_playback(content_id, action, scheduled_time):
 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
-    listener_thread.start()
-
-    time.sleep(10)
-    listener_thread = threading.Thread(target=initiate_playback, args=("video123", "play", time.time() + 10))
     listener_thread.start()

@@ -50,7 +50,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        pass
+        send_client_play(data)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
@@ -150,6 +150,28 @@ def send_message_to_all_nodes(message):
         except socket.error as e:
             print(f"Socket error: {e}")
     prompt_for_message()  # Prompt for a new message after sending to all nodes
+
+def send_client_play(data):
+    print(f"Ask Controller For content play : {data}")
+
+    message = {
+        "type": "client_play",
+        "sender_id": NODE_ID,
+        "message_id": "msg-clinet-play",
+        "init_message_id": data["message_id"],
+        "action":data["action"],
+        "content_id":data["content_id"],
+        "scheduled_time": data["scheduled_time"]
+    }
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        print(f"Sending client play request: {message}")
+        s.sendall(json.dumps(message).encode('utf-8'))
+        s.close()
+    except socket.error as e:
+        print(f"Error sending client play request to controller: {e}")
 
 def handle_init_playback(data):
     print(f"Received playback initiation: {data}")
