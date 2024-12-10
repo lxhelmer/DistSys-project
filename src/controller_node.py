@@ -67,6 +67,11 @@ def reply_with_node_details(client_socket: socket.socket):
     client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
     print("sent data")
 
+def send_file_list(client_socket: socket.socket):
+    global FILES
+    client_socket.send(json.dumps({"type": "file_list_update", "file_list": FILES}).encode('utf-8'))
+    print("sent file list")
+
 def listen_for_connection(host, port):
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -179,7 +184,6 @@ def check_current_files():
     global FILES
     FILES = listdir('../data')
 
-def  
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
     listener_thread.start()
