@@ -152,7 +152,7 @@ def handle_playback_ack(data):
     ready_count = sum(1 for ack in receive_ack if ack == "yes")
     print(f"Ready nodes: {ready_count}/{len(NODES)}")
 
-    if ready_count >= (len(NODES) // 2):  # Check quorum
+    if ready_count == (len(NODES)):  # Check quorum
         confirm_playback(data["content_id"], data["action"], data["scheduled_time"])
         # Reschedule the function to run again after 10 seconds
         threading.Timer(10, initiate_playback, args=("video456", "play", time.time() + 10)).start()
