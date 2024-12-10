@@ -107,6 +107,7 @@ def initiate_playback(content_id, action, scheduled_time):
     global NODES
     while True:
         time.sleep(10)
+        print (NODES, "nodess")
 
         print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
         playback_message = {
@@ -126,6 +127,7 @@ def initiate_playback(content_id, action, scheduled_time):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect((node['HOST'], node['PORT']))
                 s.sendall(json.dumps(playback_message).encode('utf-8'))
+                print("a")
                 response = s.recv(1024)  # Wait for acknowledgment
                 ("got ack=>", response)
                 if not response:

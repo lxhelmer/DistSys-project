@@ -60,8 +60,8 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
-        time.sleep(5)
-        handle_state_update(data)
+        pass#time.sleep(5)
+        #handle_state_update(data)
     else:
         print("Unidentified message")
 
