@@ -7,7 +7,7 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 import sys 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.synchronization_utils import initiate_playback handle_init_playback, handle_playback_ack, handle_confirm_playback
+from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
 
 config_path = os.path.join(current_dir, '..', 'config', 'config.json')
 
