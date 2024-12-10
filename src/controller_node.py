@@ -11,6 +11,7 @@ CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 
 NODES = []
+receive_ack =[]
 
 def handle_client_connection(client_socket):
     try:
@@ -49,12 +50,8 @@ def read_data(data, client_socket):
         pass
     elif data["type"] == "client_stop":
         pass
-    elif data["type"] == "init_playback":
-        pass
     elif data["type"] == "ack_playback":
-        pass
-    elif data["type"] == "confirm_playback":
-        pass
+        handle_playback_ack(data)
     elif data["type"] == "state_update":
         pass
     else:
@@ -105,6 +102,8 @@ def send_nodes_list_to_all():
 
 def initiate_playback(content_id, action, scheduled_time):
     global NODES
+    global receive_ack
+    receive_ack=[]
     while True:
         time.sleep(10)
         print (NODES, "nodess")
@@ -143,15 +142,20 @@ def initiate_playback(content_id, action, scheduled_time):
                 s.close()
             except socket.error as e:
                 print(f"Error communicating with {node['NODE_ID']}: {e}")
-        
-        # Check acknowledgments
-        all_ready = [1  for resp in responses if resp["answer"] == "yes"]
-        print(all_ready)
-        print( (len(responses)/2 ))
-        if len(all_ready) >= (len(responses)/2 ):
-            confirm_playback(content_id, action, scheduled_time)
-        else:
-            print("Not all nodes are ready for playback. Cancelling playback.")
+          
+def handle_playback_Ack(data):
+    global receive_ack
+    global NODES
+    receive_ack.append(data["answer"])
+
+    # Check acknowledgments
+    all_ready = [1  for resp in receive_ack if resp == "yes"]
+    print(all_ready)
+    print( (len(NODES)/2 ))
+    if len(all_ready) >= (len(NODES)/2 ):
+        confirm_playback(data["content_id"], data["action"], data["scheduled_time"])
+    else:
+        print("Not all nodes are ready for playback. Cancelling playback.")
 
 def confirm_playback(content_id, action, scheduled_time):
     global NODES

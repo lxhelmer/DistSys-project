@@ -168,7 +168,10 @@ def handle_init_playback(data):
         "message_id": "msg-ack-playback",
         "init_message_id": data["message_id"],
         "timestamp": time.time(),
-        "answer": "yes" #if video_exists and node_ready else "no"
+        "answer": "yes", #if video_exists and node_ready else "no",
+        "action":data["action"],
+        "content_id":data["content_id"],
+        "scheduled_time": data["scheduled_time"]
     }
 
     try:
