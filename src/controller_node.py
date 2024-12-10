@@ -191,6 +191,7 @@ def handle_playback_ack(data):
         threading.Timer(10, initiate_playback, args=("video456", "play", time.time() + 10)).start()
     else:
         print("Not enough nodes are ready for playback. Cancelling playback.")
+    receive_ack=[]
 
 def confirm_playback(content_id, action, scheduled_time):
     global NODES
