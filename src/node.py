@@ -226,7 +226,7 @@ def share_state_with_neighbors():
         except socket.error as e:
             print(f"Error sharing state with {node['NODE_ID']}: {e}")
 
-    threading.Timer(10, target=share_state_with_neighbors).start()
+    threading.Timer(10, share_state_with_neighbors).start()
 
 def handle_state_update(data):
     print(f"State update received from {data['node_id']}: {data['state']}")

@@ -165,7 +165,7 @@ def initiate_playback(content_id, action, scheduled_time):
     # Wait for all threads to complete
     playback_request_thread_completed.wait()  # Wait until the event is set
     print("All threads have completed!")
-    threading.Timer(10, initiate_confirmation, args=("video456", "play", time.time() + 10)).start()
+    threading.Timer(10, initiate_confirmation, args=(content_id, action, scheduled_time)).start()
 
 def handle_playback_ack(data):
     global active_playback_request_threads
