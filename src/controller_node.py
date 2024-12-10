@@ -54,7 +54,7 @@ def read_data(data, client_socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        initiate_playback("video123", "play", time.time() + 10)
+        initiate_playback(data["content_id"], data["action"], data["scheduled_time"])
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "ack_playback":
