@@ -57,8 +57,12 @@ def read_data(data, client_socket):
         initiate_playback(data["content_id"], data["action"], data["scheduled_time"])
     elif data["type"] == "client_stop":
         pass
+    elif data["type"] == "init_playback":
+        handle_init_playback(data)
     elif data["type"] == "ack_playback":
         handle_playback_ack(data)
+    elif data["type"] == "confirm_playback":
+        handle_confirm_playback(data)
     elif data["type"] == "state_update":
         pass
     else:
@@ -220,6 +224,55 @@ def confirm_playback(content_id, action, scheduled_time):
             s.close()
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
+
+def handle_init_playback(data):
+    print(f"Received playback initiation: {data}")
+
+    # Check if the video exists and if the node is ready
+    #need to add this will discuss video_exists = check_video(data["content_id"])
+    node_ready = True
+
+    # Send acknowledgment back to the initiating node
+    ack_message = {
+        "type": "ack_playback",
+        "sender_id": NODE_ID,
+        "message_id": "msg-ack-playback",
+        "init_message_id": data["message_id"],
+        "timestamp": time.time(),
+        "answer": "yes", #if video_exists and node_ready else "no",
+        "action":data["action"],
+        "content_id":data["content_id"],
+        "scheduled_time": data["scheduled_time"]
+    }
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        print(f"Sending acknowledgment: {ack_message}")
+        s.sendall(json.dumps(ack_message).encode('utf-8'))
+        s.close()
+    except socket.error as e:
+        print(f"Error sending ack_playback to controller: {e}")
+
+def handle_confirm_playback(data):
+    global CURRENT_ACTION
+    global CURRENT_PLAYBACK_TIME
+    global CURRENT_CONTENT_ID
+    print(f"Confirmed playback received: {data}")
+    scheduled_time = data["scheduled_time"]
+
+    # Wait until the scheduled time to start playback
+    time_to_wait = scheduled_time - time.time()
+    if time_to_wait > 0:
+        time.sleep(time_to_wait)
+
+    # Execute the playback action
+    CURRENT_ACTION=data["action"]
+    CURRENT_CONTENT_ID = data["content_id"]
+    CURRENT_PLAYBACK_TIME = data["scheduled_time"]
+    #execute_playback(data["action"], data["content_id"])  #  Need to add this function on how to run the video
+    #for now just printing
+    print("Executing the Playback Function.")
 
 
 
