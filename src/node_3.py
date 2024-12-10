@@ -6,7 +6,6 @@ import uuid
 import sys
 import tempfile
 import os
-from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
@@ -34,6 +33,8 @@ CURRENT_PLAYBACK_TIME ="dummy"
 NODES = []
 receive_ack =[]
 ready_count=0
+
+FILES = []
 
 # Shared resources
 playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
@@ -64,6 +65,7 @@ def read_data(data, client_socket: socket.socket):
         print("Received join request from", data)
         append_node_to_list(data)
         reply_with_node_details(client_socket)
+        send_file_list(client_socket)
         # return False
     elif data["type"] == "join_ack":
         update_nodes_list(data)
@@ -105,6 +107,16 @@ def read_data(data, client_socket: socket.socket):
         health_check_thread = threading.Thread(target=perform_health_check)
         health_check_thread.start()
         ELECTION_DATA[data["ELECTION_ID"]] = {"status": "completed"}
+    elif data["type"] == "file_list":
+        print("fileChekc!!")
+        handle_file_update(data, client_socket)
+
+    elif data["type"] == "ask_file":
+        if data["file"] in FILES:
+            handle_send_file(data, client_socket)
+    elif data["type"] == "file":
+        receive_thread = threading.Thread(target=handle_receive_file)
+        receive_thread.start()
     else:
         print("Unidentified message")
     return True
@@ -115,6 +127,29 @@ def update_leader_details(data):
     CONTROLLER_PORT = data["PORT"]
     CONTROLLER_ID = data["NODE_ID"]
     print("Leader has been changed", CONTROLLER_HOST, CONTROLLER_PORT, CONTROLLER_ID)
+
+def send_file_list(client_socket):
+    global FILES
+    print("answering file check with", FILES)
+    client_socket.send(json.dumps({"type": "file_list", "file_list": FILES}).encode('utf-8'))
+
+def handle_file_update(data, client_socket):
+    global FILES
+    print("Received:", data["file_list"])
+    recv_files = sorted(data["file_list"])
+    for r_file in recv_files:
+        if r_file not in FILES:
+            print("asking file:",r_file)
+
+
+def handle_send_file(data, client_socket):
+    pass
+
+def handle_ask_file():
+    pass
+
+def handle_receive_file():
+    pass
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
@@ -231,6 +266,8 @@ def send_node_info_to_controller():
     except socket.error as e:
         print(f"Socket error: {e}")
 
+
+
 def perform_health_check():
     global ELECTION_DATA
     current_controller_id = CONTROLLER_ID
@@ -336,13 +373,20 @@ def handle_state_update(data):
        # synchronize_with_state(data["state"])
     threading.Timer(10, share_state_with_neighbors).start()
 
+def check_files():
+    global FILES
+    FILES = os.listdir('../data')
+
 if __name__ == '__main__':
+    check_files()
     system_details = {}
-    if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
-        with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
-            system_details = json.load(f)
+    #if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
+    #    with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
+    #        system_details = json.load(f)
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
+
+
     if system_details == {}:
         if CONTROLLER_ID != NODE_ID:
             send_node_info_to_controller()
