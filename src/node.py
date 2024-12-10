@@ -90,7 +90,9 @@ def handle_discover_ack(data):
     print("received discover ack", data)
 
 def handle_file_update(data):
-    print(data)
+    print(data['file_list'])
+    print(FILES)
+    print('*****')
 
 def listen_for_connection(host, port):
     try:
