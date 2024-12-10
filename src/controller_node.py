@@ -135,7 +135,7 @@ def send_playback_request_to_node(node, playback_message):
                 threads_completed.set()  # Signal that all threads are done
 
 def initiate_playback(content_id, action, scheduled_time):
-    time.sleep(20)
+    time.sleep(10)
     global NODES
     global receive_ack
     global active_threads
