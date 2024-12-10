@@ -4,7 +4,7 @@ import threading
 import json
 import time
 
-NODES = ["controller"]
+NODES = [{'HOST': 'svm-11.cs.helsinki.fi', 'PORT': 65442, 'NODE_ID': 'controller'}]
 receive_ack =[]
 ready_count=0
 
@@ -60,7 +60,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
         "action": action,
         "content_id": content_id,
         "scheduled_time": scheduled_time,
-        "node_id":node_id,
+        "NODE_ID":node_id,
         "node_host":node_host,
         "node_port": node_port
     }
