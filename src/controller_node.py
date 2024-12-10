@@ -143,7 +143,7 @@ def initiate_playback(content_id, action, scheduled_time):
             except socket.error as e:
                 print(f"Error communicating with {node['NODE_ID']}: {e}")
           
-def handle_playback_Ack(data):
+def handle_playback_ack(data):
     global receive_ack
     global NODES
     receive_ack.append(data["answer"])
