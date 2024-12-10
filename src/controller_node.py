@@ -39,8 +39,7 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket):
     print(data)
-    global active_playback_request_threads
-    global playback_request_thread_completed
+    
     if data["type"] == "join_system": # received only by the controller node
         print("Received join request from", data)
         update_nodes_list(data)
@@ -59,15 +58,7 @@ def read_data(data, client_socket):
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "ack_playback":
-        receive_ack.append(data["answer"])
-        # Check if enough nodes are ready for playback
-        ready_count = sum(1 for ack in receive_ack if ack == "yes")
-        print(f"Ready nodes: {ready_count}/{len(NODES)}")
-        # Safely decrement the counter
-        with lock:
-            active_playback_request_threads -= 1
-            if active_playback_request_threads == 0:
-                playback_request_thread_completed.set()  # Signal that all threads are done
+        handle_playback_ack(data)
     elif data["type"] == "state_update":
         pass
     else:
@@ -174,13 +165,28 @@ def initiate_playback(content_id, action, scheduled_time):
     # Wait for all threads to complete
     playback_request_thread_completed.wait()  # Wait until the event is set
     print("All threads have completed!")
-    threading.Timer(10, handle_playback_ack, args=("video456", "play", time.time() + 10)).start()
+    threading.Timer(10, initiate_confirmation, args=("video456", "play", time.time() + 10)).start()
 
-    
+def handle_playback_ack(data):
+    global active_playback_request_threads
+    global playback_request_thread_completed
+    global ready_count
+    global receive_ack
+
+    receive_ack.append(data["answer"])
+    # Check if enough nodes are ready for playback
+    ready_count = sum(1 for ack in receive_ack if ack == "yes")
+    print(f"Ready nodes: {ready_count}/{len(NODES)}")
+    # Safely decrement the counter
+    with lock:
+        active_playback_request_threads -= 1
+        if active_playback_request_threads == 0:
+            playback_request_thread_completed.set()  # Signal that all threads are done  
           
-def handle_playback_ack(content_id, action, scheduled_time):
+def initiate_confirmation(content_id, action, scheduled_time):
     global ready_count
     global NODES
+    print(ready_count >= (len(NODES) // 2))
 
     if ready_count >= (len(NODES) // 2):  # Check quorum
         confirm_playback(content_id, action, scheduled_time)
