@@ -65,7 +65,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
-        initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT)
+        initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES.append("controller"))
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
@@ -210,7 +210,4 @@ if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
 
-    
-    state_sharing_thread = threading.Thread(target=share_state_with_neighbors)
-    state_sharing_thread.start()
     send_node_info_to_controller()

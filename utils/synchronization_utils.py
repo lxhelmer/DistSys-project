@@ -39,14 +39,16 @@ def send_playback_request_to_node(node, playback_message):
         s.close()
         
 
-def initiate_playback(content_id, action, scheduled_time, node_id, node_host, node_port):
+def initiate_playback(content_id, action, scheduled_time, node_id, node_host, node_port, NODES_LIST):
     global NODES
     global receive_ack
     global active_playback_request_threads
     global playback_request_thread_completed
 
     receive_ack=[]
+    NODES=NODES_LIST
     print (NODES, "nodess")
+
 
     print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
     playback_message = {
