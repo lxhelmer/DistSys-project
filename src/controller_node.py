@@ -104,44 +104,42 @@ def initiate_playback(content_id, action, scheduled_time):
     global NODES
     global receive_ack
     receive_ack=[]
-    while True:
-        time.sleep(10)
-        print (NODES, "nodess")
+    print (NODES, "nodess")
 
-        print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
-        playback_message = {
-            "type": "init_playback",
-            "sender_id": "controller",
-            "message_id": "msg-init-playback",
-            "timestamp": time.time(),
-            "action": action,
-            "content_id": content_id,
-            "scheduled_time": scheduled_time
-        }
+    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
+    playback_message = {
+        "type": "init_playback",
+        "sender_id": "controller",
+        "message_id": "msg-init-playback",
+        "timestamp": time.time(),
+        "action": action,
+        "content_id": content_id,
+        "scheduled_time": scheduled_time
+    }
 
-        # Send playback initiation message to all nodes
-        responses = []
-        for node in NODES:
+    # Send playback initiation message to all nodes
+    responses = []
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(playback_message).encode('utf-8'))
+            print("a")
+            response = s.recv(1024)  # Wait for acknowledgment
+            ("got ack=>", response)
+            if not response:
+                print(f"No response from node {node['NODE_ID']}")
+                continue
+            responses.append(json.loads(response.decode('utf-8')))
             try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((node['HOST'], node['PORT']))
-                s.sendall(json.dumps(playback_message).encode('utf-8'))
-                print("a")
-                response = s.recv(1024)  # Wait for acknowledgment
-                ("got ack=>", response)
-                if not response:
-                    print(f"No response from node {node['NODE_ID']}")
-                    continue
-                responses.append(json.loads(response.decode('utf-8')))
-                try:
-                    response_data = json.loads(response.decode('utf-8'))
-                    responses.append(response_data)
-                except json.JSONDecodeError as e:
-                    print(f"Invalid JSON response from node {node['NODE_ID']}: {response}. Error: {e}")
-                
-                s.close()
-            except socket.error as e:
-                print(f"Error communicating with {node['NODE_ID']}: {e}")
+                response_data = json.loads(response.decode('utf-8'))
+                responses.append(response_data)
+            except json.JSONDecodeError as e:
+                print(f"Invalid JSON response from node {node['NODE_ID']}: {response}. Error: {e}")
+            
+            s.close()
+        except socket.error as e:
+            print(f"Error communicating with {node['NODE_ID']}: {e}")
           
 def handle_playback_ack(data):
     global receive_ack
@@ -178,7 +176,6 @@ def confirm_playback(content_id, action, scheduled_time):
             s.connect((node['HOST'], node['PORT']))
             s.sendall(json.dumps(confirmation_message).encode('utf-8'))
             s.close()
-            print("confirmation message sent")
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
 
