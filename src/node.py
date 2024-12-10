@@ -129,7 +129,7 @@ def update_nodes_list(data):
             #print(f"Node added: {node}")
     else:
         print(f"Node already in list or is self: {node}")
-    #print(NODES)
+    print("all", NODES)
     # prompt_for_message()
 
 def send_node_info_to_controller():
