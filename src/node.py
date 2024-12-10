@@ -58,8 +58,7 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
     elif data["type"] == "state_update":
-        pass#time.sleep(5)
-        #handle_state_update(data)
+        handle_state_update
     else:
         print("Unidentified message")
 
@@ -234,11 +233,13 @@ def handle_state_update(data):
     if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
         print("State inconsistency detected. Resynchronizing...")
        # synchronize_with_state(data["state"])
+    threading.Timer(10, share_state_with_neighbors).start()
 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
 
-    send_node_info_to_controller()
+    
     state_sharing_thread = threading.Thread(target=share_state_with_neighbors)
     state_sharing_thread.start()
+    send_node_info_to_controller()
