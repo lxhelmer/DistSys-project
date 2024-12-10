@@ -235,6 +235,10 @@ def handle_state_update(data):
        # synchronize_with_state(data["state"])
     threading.Timer(10, share_state_with_neighbors).start()
 
+def check_files():
+    global FILES
+    FILES = listdir('../data')
+
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()

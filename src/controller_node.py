@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+from sys import listdir
 
 import time
 
@@ -11,6 +12,7 @@ CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 
 NODES = []
+FILES = []
 receive_ack =[]
 ready_count=0
 
@@ -67,6 +69,10 @@ def read_data(data, client_socket):
 def reply_with_node_details(client_socket: socket.socket):
     client_socket.send(json.dumps({"type": "join_ack", "node_details": NODES}).encode('utf-8'))
     print("sent data")
+
+def send_file_list(client_socket: socket.socket):
+    global FILES
+    client_socket.send(json.dumps({"type": "file_list", "file_list": FILES
 
 def listen_for_connection(host, port):
     try:
@@ -220,6 +226,9 @@ def confirm_playback(content_id, action, scheduled_time):
         except socket.error as e:
             print(f"Error sending confirmation to {node['NODE_ID']}: {e}")
 
+def check_files():
+    global FILES
+    FILES = listdir('../data')
 
 
 if __name__ == '__main__':
