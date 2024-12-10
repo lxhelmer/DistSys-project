@@ -13,6 +13,11 @@ CONTROLLER_PORT = config['CONTROLLER_PORT']
 NODES = []
 receive_ack =[]
 
+# Shared resources
+threads_completed = threading.Event()  # Event to signal all threads are done
+active_threads = 0  # Counter for active threads
+lock = threading.Lock()  # Ensure thread-safe updates to the counter
+
 def handle_client_connection(client_socket):
     try:
         while True:
@@ -99,7 +104,8 @@ def send_nodes_list_to_all():
         except socket.error as e:
             print(f"Socket error: {e}")
 
-def send_request_to_node(node, playback_message):
+def send_playback_request_to_node(node, playback_message):
+    global active_threads
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((node['HOST'], node['PORT']))
@@ -121,11 +127,20 @@ def send_request_to_node(node, playback_message):
         s.close()
     except socket.error as e:
         print(f"Error communicating with {node['NODE_ID']}: {e}")
+    finally:
+        # Safely decrement the counter
+        with lock:
+            active_threads -= 1
+            if active_threads == 0:
+                threads_completed.set()  # Signal that all threads are done
 
 def initiate_playback(content_id, action, scheduled_time):
-    time.sleep(10)
+    time.sleep(20)
     global NODES
     global receive_ack
+    global active_threads
+    global threads_completed
+
     receive_ack=[]
     print (NODES, "nodess")
 
@@ -143,19 +158,23 @@ def initiate_playback(content_id, action, scheduled_time):
     # Create a thread for each node
     threads = []
     for node in NODES:
-        thread = threading.Thread(target=send_request_to_node, args=(node, playback_message))
+        thread = threading.Thread(target=send_playback_request_to_node, args=(node, playback_message))
         thread.start()
         threads.append(thread)
 
-    # Wait for all threads to finish
-    for thread in threads:
-        thread.join()
+    # Safely increment the counter
+        with lock:
+            active_threads += 1
+
     
           
 def handle_playback_ack(data):
     global receive_ack
     global NODES
     receive_ack.append(data["answer"])
+    # Wait for all threads to complete
+    threads_completed.wait()  # Wait until the event is set
+    print("All threads have completed!")
 
     # Check if enough nodes are ready for playback
     ready_count = sum(1 for ack in receive_ack if ack == "yes")
