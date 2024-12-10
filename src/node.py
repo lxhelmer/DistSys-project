@@ -51,6 +51,7 @@ def handle_client_connection(client_socket):
         client_socket.close()
 
 def read_data(data, client_socket: socket.socket):
+    global NODES
     print(data)
     if data["type"] == "join_system": # received only by the controller node. may not need this here
         pass
