@@ -26,9 +26,9 @@ TIME_BETWEEN_HEALTH_CHECKS = config['TIME_BETWEEN_HEALTH_CHECKS']
 ELECTION_STARTED = False
 ELECTION_DATA = {}
 
-CURRENT_ACTION = "dummy"
-CURRENT_CONTENT_ID = "dummy"
-CURRENT_PLAYBACK_TIME ="dummy"
+CURRENT_ACTION = "play"
+CURRENT_CONTENT_ID = "video123"
+CURRENT_PLAYBACK_TIME ="23.43"
 
 NODES = []
 receive_ack =[]
@@ -84,8 +84,6 @@ def read_data(data, client_socket: socket.socket):
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
-    elif data["type"] == "state_update":
-        handle_state_update
     elif data["type"] == "health_check":
         send_health_ack(data, client_socket)
     elif data["type"] == "leader_election":
@@ -104,6 +102,12 @@ def read_data(data, client_socket: socket.socket):
         health_check_thread = threading.Thread(target=perform_health_check)
         health_check_thread.start()
         ELECTION_DATA[data["ELECTION_ID"]] = {"status": "completed"}
+    elif data["type"] == "send_update":
+        share_state_with_controller()
+    elif data["type"] == "ask_update":
+        handle_ask_update()
+    elif data["type"] == "state_update":
+        handle_state_update(data)
     else:
         print("Unidentified message")
     return True
@@ -279,6 +283,29 @@ def start_leader_election():
         sender_thread = threading.Thread(target=send_new_leader_elected_message, args=(node, election_id))
         sender_thread.start()
 
+def share_state_with_controller():
+    global NODES
+    global CURRENT_ACTION
+    global CURRENT_CONTENT_ID
+    global CURRENT_PLAYBACK_TIME
+    state_message = {
+        "type": "state_update",
+        "node_id": NODE_ID,
+        "state": {
+            "action": CURRENT_ACTION,
+            "content_id": CURRENT_CONTENT_ID,
+            "current_time": time.time()              }
+    }
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        s.sendall(json.dumps(state_message).encode('utf-8'))
+        s.close()
+        print("sharing own state", state_message)
+    except socket.error as e:
+        print(f"Error sharing state with controller: {e}")
+
 def send_new_leader_elected_message(node, election_id):
     global ELECTION_DATA
     try:
@@ -332,7 +359,25 @@ def handle_state_update(data):
     if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
         print("State inconsistency detected. Resynchronizing...")
        # synchronize_with_state(data["state"])
-    threading.Timer(10, share_state_with_neighbors).start()
+    # threading.Timer(10, share_state_with_neighbors).start()
+    else:
+        print("Consistent state")
+
+def handle_ask_update():
+    global NODES
+    message = {
+        "type": "send_update",
+        "node_id": NODE_ID          
+    }
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(json.dumps(message).encode('utf-8'))
+            s.close()
+            print(f"Asking for node state update")
+        except socket.error as e:
+            print(f"Socket error: {e}")
 
 if __name__ == '__main__':
     system_details = {}
