@@ -22,7 +22,6 @@ NODE_ID = config['NODE_ID']
 
 CURRENT_ACTION = "dummy"
 CURRENT_CONTENT_ID = "dummy"
-CURRENT_PLAYBACK_TIME ="dummy"
 
 NODES = []
 receive_ack =[]
@@ -52,6 +51,8 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket: socket.socket):
     global NODES
+    global CURRENT_ACTION 
+    global CURRENT_CONTENT_ID
     print(data)
     if data["type"] == "join_system": # received only by the controller node. may not need this here
         pass
@@ -66,6 +67,8 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
+        CURRENT_ACTION = data["action"]
+        CURRENT_CONTENT_ID = data["content_id"]
         initiate_playback(data["content_id"], data["action"], data["time_after"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
@@ -76,8 +79,8 @@ def read_data(data, client_socket: socket.socket):
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
-    elif data["type"] == "state_update":
-        handle_state_update
+    elif data["type"] == "send_update":
+        share_state_with_controller()
     else:
         print("Unidentified message")
 
@@ -173,7 +176,7 @@ def send_message_to_all_nodes(message):
 
 
 
-def share_state_with_neighbors():
+def share_state_with_controller():
     global NODES
     global CURRENT_ACTION
     global CURRENT_CONTENT_ID
@@ -184,29 +187,18 @@ def share_state_with_neighbors():
         "state": {
             "action": CURRENT_ACTION,
             "content_id": CURRENT_CONTENT_ID,
-            "current_time": CURRENT_PLAYBACK_TIME              }
+            "current_time": time.time()              }
     }
 
-    # Send state to all neighbors
-    for node in NODES:
-        try:
+    try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((node['HOST'], node['PORT']))
+            s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
             s.sendall(json.dumps(state_message).encode('utf-8'))
             s.close()
             print("sharing own state", state_message)
-        except socket.error as e:
-            print(f"Error sharing state with {node['NODE_ID']}: {e}")
+    except socket.error as e:
+            print(f"Error sharing state with controller: {e}")
 
-    threading.Timer(10, share_state_with_neighbors).start()
-
-def handle_state_update(data):
-    print(f"State update received from {data['node_id']}: {data['state']}")
-    # Compare received state with current state
-    if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
-        print("State inconsistency detected. Resynchronizing...")
-       # synchronize_with_state(data["state"])
-    threading.Timer(10, share_state_with_neighbors).start()
 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))

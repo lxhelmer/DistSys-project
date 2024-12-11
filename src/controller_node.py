@@ -17,6 +17,9 @@ with open(config_path, 'r') as config_file:
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 
+CURRENT_ACTION = "dummy"
+CURRENT_CONTENT_ID = "dummy"
+
 NODES = []
 receive_ack =[]
 ready_count=0
@@ -46,6 +49,8 @@ def handle_client_connection(client_socket):
 
 def read_data(data, client_socket):
     global NODES
+    global CURRENT_ACTION 
+    global CURRENT_CONTENT_ID
     print(data)
     
     if data["type"] == "join_system": # received only by the controller node
@@ -62,6 +67,8 @@ def read_data(data, client_socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
+        CURRENT_ACTION = data["action"]
+        CURRENT_CONTENT_ID =data["content_id"]
         initiate_playback(data["content_id"], data["action"], data["scheduled_time"], node_id="controller", node_host=CONTROLLER_HOST, node_port=CONTROLLER_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
@@ -72,8 +79,10 @@ def read_data(data, client_socket):
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
+    elif data["type"] == "ask_update":
+        handle_ask_update()
     elif data["type"] == "state_update":
-        pass
+        handle_state_update(data)
     else:
         print("Unidentified message")
 
@@ -122,6 +131,31 @@ def send_nodes_list_to_all():
         except socket.error as e:
             print(f"Socket error: {e}")
 
+def handle_ask_update():
+    global NODES
+    message = {
+        "type": "send_update",
+        "node_id": "controller"          
+    }
+    for node in NODES:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((node['HOST'], node['PORT']))
+            s.sendall(message.encode('utf-8'))
+            s.close()
+            print(f"Asking for node state update")
+        except socket.error as e:
+            print(f"Socket error: {e}")
+
+
+def handle_state_update(data):
+    print(f"State update received from {data['node_id']}: {data['state']}")
+    # Compare received state with current state
+    if data["state"]["action"] != CURRENT_ACTION or data["state"]["content_id"] != CURRENT_CONTENT_ID:
+        print("State inconsistency detected. Resynchronizing...")
+       # synchronize_with_state(data["state"])
+    else:
+        print("Consistent state")
 
 if __name__ == '__main__':
     listener_thread = threading.Thread(target=listen_for_connection, args=(CONTROLLER_HOST, CONTROLLER_PORT))
