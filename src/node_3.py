@@ -160,7 +160,7 @@ def handle_send_file(file_name, client_socket):
     with open("../data/"+file_name, "rb") as f:
         while True:
             send_bytes = f.read(BUFFER_SIZE)
-            if not file_bytes:
+            if not send_bytes:
                 break
             client_socket.sendall(send_bytes)
 
