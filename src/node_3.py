@@ -9,7 +9,7 @@ import os
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
-BUDDER_SIZE = 4096
+BUFFER_SIZE = 4096
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 CONTROLLER_ID = config['CONTROLLER_ID']
@@ -175,11 +175,6 @@ def handle_ask_file(file_name, client_socket):
     print("Sending request for missing file")
     client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
 
-
-
-
-def handle_receive_file():
-    pass
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
