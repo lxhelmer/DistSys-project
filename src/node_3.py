@@ -9,7 +9,7 @@ import os
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
-
+BUDDER_SIZE = 4096
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 CONTROLLER_ID = config['CONTROLLER_ID']
@@ -65,56 +65,71 @@ def read_data(data, client_socket: socket.socket):
         reply_with_node_details(client_socket)
         send_file_list(client_socket)
         # return False
+
     elif data["type"] == "join_ack":
         update_nodes_list(data)
         send_discover_to_all_nodes()
+
     elif data["type"] == "discover_node":
         NODES.append({'HOST': data["HOST"], 'PORT': data["PORT"], 'NODE_ID': data["NODE_ID"]})
         send_discover_ack(data)
+
     elif data["type"] == "discover_ack":
         handle_discover_ack(data)
+
     elif data["type"] == "client_pause":
         pass
+
     elif data["type"] == "client_play":
         initiate_playback(data["content_id"], data["action"], data["time_after"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
+
     elif data["type"] == "client_stop":
         pass
+
     elif data["type"] == "init_playback":
         handle_init_playback(data)
+
     elif data["type"] == "ack_playback":
         handle_playback_ack(data)
+
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
+
     elif data["type"] == "state_update":
         handle_state_update
+
     elif data["type"] == "health_check":
         send_health_ack(data, client_socket)
+
     elif data["type"] == "leader_election":
         ELECTION_STARTED = True
         handle_leader_election(data, client_socket)
+
     elif data["type"] == "leader_exists":
         update_leader_details(data)
         ELECTION_DATA[data["ELECTION_ID"]]["status"] = "cancelled"
         print("Stopping leader election due to already existing leader", data)
+
     elif data["type"] == "leader_nack":
         ELECTION_DATA[data["ELECTION_ID"]]["status"] = "cancelled"
         print("Stopping leader election due to high priority neighbor", data)
+
     elif data["type"] == "leader_elected":
         print("Received leader elected message", data)
         update_leader_details(data)
         health_check_thread = threading.Thread(target=perform_health_check)
         health_check_thread.start()
         ELECTION_DATA[data["ELECTION_ID"]] = {"status": "completed"}
+
     elif data["type"] == "file_list":
-        print("fileChekc!!")
+        print("Received file list:", data["file_list"])
         handle_file_update(data, client_socket)
 
-    elif data["type"] == "ask_file":
-        if data["file"] in FILES:
-            handle_send_file(data, client_socket)
-    elif data["type"] == "file":
-        receive_thread = threading.Thread(target=handle_receive_file)
-        receive_thread.start()
+    elif data["type"] == "file_request":
+        file_name = data["file_name"]
+        if file_name in FILES:
+            handle_send_file(file_name, client_socket)
+
     else:
         print("Unidentified message")
     return True
@@ -128,23 +143,40 @@ def update_leader_details(data):
 
 def send_file_list(client_socket):
     global FILES
-    print("answering file check with", FILES)
-    client_socket.send(json.dumps({"type": "file_list", "file_list": FILES}).encode('utf-8'))
+    print("Answering file check with", FILES)
+    client_socket.send(json.dumps({"type": "file_list", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_list": FILES}).encode('utf-8'))
 
 def handle_file_update(data, client_socket):
     global FILES
-    print("Received:", data["file_list"])
+    print("Checking local files against received file list")
     recv_files = sorted(data["file_list"])
     for r_file in recv_files:
         if r_file not in FILES:
             print("file missing:",r_file)
+            handle_ask_file("r_file",client_socket)
+            with open("../data/"+r_file, "wb") as f:
+                while True:
+                    recv_bytes = client_socket.recv(BUFFER_SIZE)
+                    if not recv_bytes:
+                        break
+                    f.write(recv_bytes)
 
 
-def handle_send_file(data, client_socket):
-    pass
+def handle_send_file(file_name, client_socket):
+    with open("../data/"+file_name, "rb") as f:
+        while True:
+            send_bytes = f.read(BUFFER_SIZE)
+            if not file_bytes:
+                break
+            client_socket.sendall(send_bytes)
 
-def handle_ask_file():
-    pass
+
+def handle_ask_file(file_name, client_socket):
+    print("Sending request for missing file")
+    client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
+
+
+
 
 def handle_receive_file():
     pass
@@ -378,9 +410,9 @@ def check_files():
 if __name__ == '__main__':
     check_files()
     system_details = {}
-    if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
-        with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
-            system_details = json.load(f)
+   # if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
+   #     with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
+   #         system_details = json.load(f)
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
 
@@ -396,5 +428,5 @@ if __name__ == '__main__':
         if int(CONTROLLER_ID.split("-")[1]) > int(NODE_ID.split("-")[1]):
             start_leader_election()
         else:
-            print("Joining the system quietly")
-
+            print("Joining the system and checking for consistency")
+            send_node_info_to_controller()
