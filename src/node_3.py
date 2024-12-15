@@ -303,6 +303,7 @@ def file_update():
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
         s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
+        handle_client_connection(s)
     except socket.error as e:
         print(f" fileSocket error: {e}")
 
