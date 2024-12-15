@@ -1,0 +1,32 @@
+Listening on localhost:9090
+Connection from ('127.0.0.1', 59182)
+Received join request from {'type': 'join_system', 'node_details': {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}}
+Node added: {'type': 'join_system', 'node_details': {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}}
+Answering file check with ['file3', 'file1', 'file2']
+Connection from ('127.0.0.1', 59190)
+Connection from ('127.0.0.1', 59204)
+Received discover message from node: node-1
+Writing data to file [{'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9090, 'NODE_ID': 'node-0'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}]
+Connection from ('127.0.0.1', 44754)
+Received join request from {'type': 'join_system', 'node_details': {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}}
+Node added: {'type': 'join_system', 'node_details': {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}}
+Answering file check with ['file3', 'file1', 'file2']
+Connection from ('127.0.0.1', 44768)
+Connection from ('127.0.0.1', 44772)
+Connection from ('127.0.0.1', 44786)
+Received discover message from node: node-1
+Received discover message from node: node-1
+Writing data to file [{'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9090, 'NODE_ID': 'node-0'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9090, 'NODE_ID': 'node-0'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}]
+Writing data to file [{'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9090, 'NODE_ID': 'node-0'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9090, 'NODE_ID': 'node-0'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}, {'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}]
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+Received health check {'type': 'health_check', 'HOST': 'localhost', 'PORT': 9091, 'NODE_ID': 'node-1'}
+
+
