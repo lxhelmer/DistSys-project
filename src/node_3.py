@@ -50,7 +50,7 @@ def handle_client_connection(client_socket):
             message = json.loads(data.decode('utf-8'))
             continue_read = read_data(message, client_socket)
     except socket.error as e:
-        print(f"Socket error: {e}")
+        print(f"clientSocket error: {e}")
     finally:
         client_socket.close()
 
@@ -296,12 +296,13 @@ def send_node_info_to_controller():
 
 def file_update():
     try:
+        print("try to match files")
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
         s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
         handle_client_connection(s)
     except socket.error as e:
-        print(f"Socket error: {e}")
+        print(f" fileSocket error: {e}")
 
 
 def perform_health_check():
@@ -426,8 +427,8 @@ if __name__ == '__main__':
 
     if system_details == {}:
         if CONTROLLER_ID != NODE_ID:
-            send_node_info_to_controller()
             file_update()
+            send_node_info_to_controller()
         else:
             IS_CONTROLLER = True
     else:
