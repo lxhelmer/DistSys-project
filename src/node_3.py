@@ -454,6 +454,6 @@ if __name__ == '__main__':
         if int(CONTROLLER_ID.split("-")[1]) > int(NODE_ID.split("-")[1]):
             start_leader_election()
         else:
-            print("Joining the system and checking for consistency")
-            send_node_info_to_controller()
+            print("Joining the system silently")
             file_update()
+            send_node_info_to_controller()
