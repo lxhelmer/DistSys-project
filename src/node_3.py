@@ -121,16 +121,19 @@ def read_data(data, client_socket: socket.socket):
 
     elif data["type"] == "file_list_request":
         send_file_list(client_socket)
+        return False
 
     elif data["type"] == "file_list":
         print("Received file list:", data["file_list"])
         handle_file_update(data, client_socket)
+        return False
 
     elif data["type"] == "file_request":
         print("Received file request for file:", data["file_name"])
         file_name = data["file_name"]
         if file_name in FILES:
             handle_send_file(file_name, client_socket)
+        return False
 
     else:
         print("Unidentified message")
@@ -175,7 +178,6 @@ def handle_send_file(file_name, client_socket):
                 break
             client_socket.send(send_bytes)
     print("Sent whole file")
-    client_socket.close()
 
 def handle_ask_file(file_name, file_socket):
     print("Sending request for missing file", file_name)
@@ -188,7 +190,6 @@ def handle_ask_file(file_name, file_socket):
             if not recv_bytes:
                 break
             f.write(recv_bytes)
-    f.close()
     print("Received whole file")
     file_socket.close()
 
