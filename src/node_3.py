@@ -150,14 +150,21 @@ def send_file_list(client_socket):
     client_socket.send(json.dumps({"type": "file_list", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_list": FILES}).encode('utf-8'))
 
 def handle_file_update(data, client_socket):
+    client_socket.close()
     global FILES
     print("Checking local files against received file list")
     recv_files = sorted(data["file_list"])
     for r_file in recv_files:
         if r_file not in FILES:
             print("file missing:",r_file)
-            handle_ask_file(r_file, client_socket)
-    client_socket.close()
+        try:
+            print("Create file socket")
+            file_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+            handle_ask_file(r_file, file_socket)
+            handle_client_connection(s)
+        except socket.error as e:
+            print(f" fileSocket error: {e}")
 
 
 def handle_send_file(file_name, client_socket):
@@ -169,9 +176,8 @@ def handle_send_file(file_name, client_socket):
             if not (send_bytes):
                 break
             client_socket.send(send_bytes)
-    f.close()
     print("Sent whole file")
-    handle_client_connection(client_socket)
+    client_socket.close()
 
 
 def handle_ask_file(file_name, client_socket):
@@ -187,7 +193,7 @@ def handle_ask_file(file_name, client_socket):
             f.write(recv_bytes)
     f.close()
     print("Received whole file")
-    return
+    client_socket.close()
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
