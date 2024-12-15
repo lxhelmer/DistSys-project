@@ -294,7 +294,7 @@ def send_node_info_to_controller():
     except socket.error as e:
         print(f"Socket error: {e}")
 
-def file_update()
+def file_update():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
