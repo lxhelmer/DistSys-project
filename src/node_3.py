@@ -162,7 +162,7 @@ def handle_file_update(data, client_socket):
             file_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             file_socket.connect((CONTROLLER_HOST, CONTROLLER_PORT))
             handle_ask_file(r_file, file_socket)
-            handle_client_connection(s)
+            handle_client_connection(file_socket)
         except socket.error as e:
             print(f" fileSocket error: {e}")
 
