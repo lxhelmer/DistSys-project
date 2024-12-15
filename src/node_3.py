@@ -152,7 +152,6 @@ def send_file_list(client_socket):
     client_socket.send(json.dumps({"type": "file_list", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_list": FILES}).encode('utf-8'))
 
 def handle_file_update(data, client_socket):
-    #client_socket.close()
     global FILES
     print("Checking local files against received file list")
     recv_files = sorted(data["file_list"])
@@ -166,6 +165,10 @@ def handle_file_update(data, client_socket):
                 handle_ask_file(r_file, file_socket)
             except socket.error as e:
                 print(f" fileSocket error: {e}")
+    for l_file in FILES:
+        if l_file not in recv_files:
+            print("Removing nonmatching file:", l_file)
+            os.remove("../data/"+l_file)
 
 
 def handle_send_file(file_name, client_socket):
