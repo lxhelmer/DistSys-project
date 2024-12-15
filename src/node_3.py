@@ -9,7 +9,6 @@ import os
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
-BUFFER_SIZE = 4096
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 CONTROLLER_ID = config['CONTROLLER_ID']
@@ -164,13 +163,13 @@ def handle_file_update(data, client_socket):
 def handle_send_file(file_name, client_socket):
     with open("../data/"+file_name, "rb") as f:
         while True:
-            send_bytes = f.read(BUFFER_SIZE)
+            send_bytes = f.read(1024)
             print("SENDING")
             print(send_bytes)
             if not (send_bytes):
-                f.close()
                 break
             client_socket.send(send_bytes)
+    f.close()
     print("Sent whole file")
     handle_client_connection(client_socket)
 
@@ -180,13 +179,14 @@ def handle_ask_file(file_name, client_socket):
     client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
     with open("../data/"+file_name, "wb") as f:
         while True:
-            recv_bytes = client_socket.recv(BUFFER_SIZE)
+            recv_bytes = client_socket.recv(1024)
             print("RECEIVING")
             print(recv_bytes)
             if not recv_bytes:
-                f.close()
                 break
             f.write(recv_bytes)
+    f.close()
+    print("Received whole file")
     return
 
 def handle_leader_election(data, client_socket):
