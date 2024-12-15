@@ -435,9 +435,9 @@ if __name__ == '__main__':
     check_files()
     print("FILES:", FILES)
     system_details = {}
-   # if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
-   #     with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
-   #         system_details = json.load(f)
+    if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
+        with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
+            system_details = json.load(f)
     listener_thread = threading.Thread(target=listen_for_connection, args=(NODE_HOST, NODE_PORT))
     listener_thread.start()
 
@@ -456,3 +456,4 @@ if __name__ == '__main__':
         else:
             print("Joining the system and checking for consistency")
             send_node_info_to_controller()
+            file_update()
