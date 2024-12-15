@@ -167,13 +167,16 @@ def handle_send_file(file_name, client_socket):
             send_bytes = f.read(BUFFER_SIZE)
             print("SENDING")
             print(send_bytes)
-            if not send_bytes:
+            if not (send_bytes):
+                f.close()
                 break
             client_socket.send(send_bytes)
+    print("Sent whole file")
+    handle_client_connection(client_socket)
 
 
 def handle_ask_file(file_name, client_socket):
-    print("Sending request for missing file")
+    print("Sending request for missing file", file_name)
     client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
     with open("../data/"+file_name, "wb") as f:
         while True:
@@ -184,6 +187,7 @@ def handle_ask_file(file_name, client_socket):
                 f.close()
                 break
             f.write(recv_bytes)
+    return
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
