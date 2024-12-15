@@ -179,7 +179,7 @@ def handle_send_file(file_name, client_socket):
 
 def handle_ask_file(file_name, file_socket):
     print("Sending request for missing file", file_name)
-    client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
+    file_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
     with open("../data/"+file_name, "wb") as f:
         while True:
             recv_bytes = client_socket.recv(1024)
