@@ -165,9 +165,10 @@ def handle_send_file(file_name, client_socket):
     with open("../data/"+file_name, "rb") as f:
         while True:
             send_bytes = f.read(BUFFER_SIZE)
+            print("SENDING")
             if not send_bytes:
                 break
-            client_socket.sendall(send_bytes)
+            client_socket.send(send_bytes)
 
 
 def handle_ask_file(file_name, client_socket):
@@ -176,6 +177,7 @@ def handle_ask_file(file_name, client_socket):
     with open("../data/"+file_name, "wb") as f:
         while True:
             recv_bytes = client_socket.recv(BUFFER_SIZE)
+            print("RECEIVING")
             if not recv_bytes:
                 break
             f.write(recv_bytes)
@@ -301,7 +303,6 @@ def file_update():
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
         s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
-        handle_client_connection(s)
     except socket.error as e:
         print(f" fileSocket error: {e}")
 
