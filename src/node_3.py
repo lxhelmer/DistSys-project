@@ -129,7 +129,7 @@ def read_data(data, client_socket: socket.socket):
         handle_file_update(data, client_socket)
 
     elif data["type"] == "file_request":
-        print("Received file request for file:", data["file_name"]
+        print("Received file request for file:", data["file_name"])
         file_name = data["file_name"]
         if file_name in FILES:
             handle_send_file(file_name, client_socket)
