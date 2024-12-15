@@ -177,7 +177,7 @@ def handle_send_file(file_name, client_socket):
     print("Sent whole file")
     client_socket.close()
 
-def handle_ask_file(file_name, client_socket):
+def handle_ask_file(file_name, file_socket):
     print("Sending request for missing file", file_name)
     client_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
     with open("../data/"+file_name, "wb") as f:
@@ -190,7 +190,7 @@ def handle_ask_file(file_name, client_socket):
             f.write(recv_bytes)
     f.close()
     print("Received whole file")
-    client_socket.close()
+    file_socket.close()
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
@@ -313,7 +313,7 @@ def file_update():
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
         s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
-        #handle_client_connection(s)
+        handle_client_connection(s)
     except socket.error as e:
         print(f" fileSocket error: {e}")
 
