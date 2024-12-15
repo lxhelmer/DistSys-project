@@ -182,7 +182,7 @@ def handle_ask_file(file_name, file_socket):
     file_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
     with open("../data/"+file_name, "wb") as f:
         while True:
-            recv_bytes = client_socket.recv(1024)
+            recv_bytes = file_socket.recv(1024)
             print("RECEIVING")
             print(recv_bytes)
             if not recv_bytes:
