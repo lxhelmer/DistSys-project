@@ -63,7 +63,6 @@ def read_data(data, client_socket: socket.socket):
         print("Received join request from", data)
         append_node_to_list(data)
         reply_with_node_details(client_socket)
-        send_file_list(client_socket)
         # return False
 
     elif data["type"] == "join_ack":
@@ -121,6 +120,10 @@ def read_data(data, client_socket: socket.socket):
         health_check_thread.start()
         ELECTION_DATA[data["ELECTION_ID"]] = {"status": "completed"}
 
+    elif data["type"] == "file_list_request":
+        send_file_list(client_socket)
+
+
     elif data["type"] == "file_list":
         print("Received file list:", data["file_list"])
         handle_file_update(data, client_socket)
@@ -154,6 +157,7 @@ def handle_file_update(data, client_socket):
         if r_file not in FILES:
             print("file missing:",r_file)
             handle_ask_file(r_file, client_socket)
+    client_socket.close()
 
 
 def handle_send_file(file_name, client_socket):
@@ -290,6 +294,14 @@ def send_node_info_to_controller():
     except socket.error as e:
         print(f"Socket error: {e}")
 
+def file_update()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
+        handle_client_connection(s)
+    except socket.error as e:
+        print(f"Socket error: {e}")
 
 
 def perform_health_check():
@@ -415,6 +427,7 @@ if __name__ == '__main__':
     if system_details == {}:
         if CONTROLLER_ID != NODE_ID:
             send_node_info_to_controller()
+            file_update()
         else:
             IS_CONTROLLER = True
     else:
