@@ -166,9 +166,11 @@ def handle_send_file(file_name, client_socket):
         while True:
             send_bytes = f.read(BUFFER_SIZE)
             print("SENDING")
+            print(send_bytes)
             if not send_bytes:
                 break
             client_socket.send(send_bytes)
+    client_socket.close()
 
 
 def handle_ask_file(file_name, client_socket):
@@ -178,9 +180,11 @@ def handle_ask_file(file_name, client_socket):
         while True:
             recv_bytes = client_socket.recv(BUFFER_SIZE)
             print("RECEIVING")
+            print(recv_bytes)
             if not recv_bytes:
                 break
             f.write(recv_bytes)
+    client_socket.close()
 
 def handle_leader_election(data, client_socket):
     global health_check_thread
