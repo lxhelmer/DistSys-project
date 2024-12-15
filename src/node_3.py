@@ -159,8 +159,8 @@ def handle_file_update(data, client_socket):
             print("file missing:",r_file)
         try:
             print("Create file socket")
-            file_s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+            file_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            file_socket.connect((CONTROLLER_HOST, CONTROLLER_PORT))
             handle_ask_file(r_file, file_socket)
             handle_client_connection(s)
         except socket.error as e:
