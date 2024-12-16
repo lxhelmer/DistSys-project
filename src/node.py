@@ -14,28 +14,32 @@ with open('config.json', 'r') as config_file:
 CONTROLLER_HOST = config['CONTROLLER_HOST']
 CONTROLLER_PORT = config['CONTROLLER_PORT']
 CONTROLLER_ID = config['CONTROLLER_ID']
-# NODE_HOST = config['NODE_HOST']
-# NODE_PORT = config['NODE_PORT']
-# NODE_ID = config['NODE_ID']
+
 NODE_HOST = sys.argv[1]
 NODE_PORT = int(sys.argv[2])
 NODE_ID = sys.argv[3]
+
 IS_CONTROLLER = False
+
 HEALTH_CHECK_TIMEOUT = config['HEALTH_CHECK_TIMEOUT']
 TIME_BETWEEN_HEALTH_CHECKS = config['TIME_BETWEEN_HEALTH_CHECKS']
+
 ELECTION_STARTED = False
 ELECTION_DATA = {}
 
-CURRENT_ACTION = "play"
-CURRENT_CONTENT_ID = "video123"
-CURRENT_PLAYBACK_TIME ="23.43"
+CURRENT_ACTION = ""
+CURRENT_CONTENT_ID = ""
+CURRENT_PLAYBACK_TIME =""
 
+# Contains details about the other neighbor nodes
 NODES = []
+
 FILES = []
+
+# Used for managing playback messages
 receive_ack =[]
 ready_count=0
 
-# Shared resources
 playback_request_thread_completed = threading.Event()  # Event to signal all threads are done
 active_playback_request_threads = 0  # Counter for active threads
 
@@ -61,7 +65,6 @@ def read_data(data, client_socket: socket.socket):
         print("Received join request from", data)
         append_node_to_list(data)
         reply_with_node_details(client_socket)
-        # return False
     elif data["type"] == "join_ack":
         print("Received join ack", data)
         update_nodes_list(data)

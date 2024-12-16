@@ -74,11 +74,11 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     if not playback_request_thread_completed.wait(timeout=30):  # Wait up to 10 seconds
         print("Timeout waiting for all threads to complete.")
 
-    print("All threads have completed or timed out!")
+    print("All threads have completed or timed out!", time.time())
     threading.Timer(10, initiate_confirmation, args=(content_id, action, scheduled_time)).start()
 
 def handle_init_playback(data):
-    print(f"Received playback initiation: {data}")
+    print(f"Received playback initiation: {data}", time.time())
 
     # Check if the video exists and if the node is ready
     #need to add this will discuss video_exists = check_video(data["content_id"])
