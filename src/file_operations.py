@@ -1,5 +1,6 @@
 import os
 import json 
+import socket
 
 def send_file_list(client_socket, FILES, NODE_HOST, NODE_PORT, NODE_ID):
     print("Answering file check with", FILES)
