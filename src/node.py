@@ -7,6 +7,7 @@ import sys
 import tempfile
 import os
 from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
+from file_operations import send_file_list, handle_file_update, handle_send_file, handle_ask_file, check_files
 
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
@@ -31,7 +32,6 @@ CURRENT_CONTENT_ID = "video123"
 CURRENT_PLAYBACK_TIME ="23.43"
 
 NODES = []
-FILES = []
 receive_ack =[]
 ready_count=0
 
@@ -110,11 +110,11 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "state_update":
         handle_state_update(data)
     elif data["type"] == "file_list_request":
-        send_file_list(client_socket)
+        send_file_list(client_socket, FILES, NODE_HOST, NODE_PORT, NODE_ID)
         return False
     elif data["type"] == "file_list":
         print("Received file list:", data["file_list"])
-        handle_file_update(data, client_socket)
+        handle_file_update(data, client_socket, FILES, CONTROLLER_HOST, CONTROLLER_PORT, NODE_HOST, NODE_PORT, NODE_ID)
         return False
     elif data["type"] == "file_request":
         print("Received file request for file:", data["file_name"])
@@ -126,69 +126,6 @@ def read_data(data, client_socket: socket.socket):
         print("Unidentified message")
     return True
 
-def send_file_list(client_socket):
-    global FILES
-    print("Answering file check with", FILES)
-    client_socket.send(json.dumps({"type": "file_list", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_list": FILES}).encode('utf-8'))
-
-def handle_file_update(data, client_socket):
-    global FILES
-    print("Checking local files against received file list")
-    recv_files = sorted(data["file_list"])
-    for r_file in recv_files:
-        if r_file not in FILES:
-            print("file missing:",r_file)
-            try:
-                print("Create file socket")
-                file_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                file_socket.connect((CONTROLLER_HOST, CONTROLLER_PORT))
-                handle_ask_file(r_file, file_socket)
-            except socket.error as e:
-                print(f" fileSocket error: {e}")
-    for l_file in FILES:
-        if l_file not in recv_files:
-            print("Removing nonmatching file:", l_file)
-            os.remove("../data/"+l_file)
-
-
-def handle_send_file(file_name, client_socket):
-    with open("../data/"+file_name, "rb") as f:
-        while True:
-            send_bytes = f.read(1024)
-            print("SENDING")
-            print(send_bytes)
-            if not (send_bytes):
-                break
-            client_socket.send(send_bytes)
-    print("Sent whole file")
-
-def handle_ask_file(file_name, file_socket):
-    print("Sending request for missing file", file_name)
-    file_socket.send(json.dumps({"type": "file_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID, "file_name": file_name}).encode('utf-8'))
-    with open("../data/"+file_name, "wb") as f:
-        while True:
-            recv_bytes = file_socket.recv(1024)
-            print("RECEIVING")
-            print(recv_bytes)
-            if not recv_bytes:
-                break
-            f.write(recv_bytes)
-    print("Received whole file")
-    file_socket.close()
-
-def file_update():
-    try:
-        print("try to match files")
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
-        s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
-        handle_client_connection(s)
-    except socket.error as e:
-        print(f" fileSocket error: {e}")
-
-def check_files():
-    global FILES
-    FILES = os.listdir('../data')
 
 def update_leader_details(data):
     global CONTROLLER_HOST, CONTROLLER_PORT, CONTROLLER_ID
@@ -457,10 +394,21 @@ def handle_ask_update():
         except socket.error as e:
             print(f"Socket error: {e}")
 
+def file_update(CONTROLLER_HOST, CONTROLLER_PORT, NODE_HOST, NODE_PORT, NODE_ID):
+    try:
+        print("Requesting file list from leader")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((CONTROLLER_HOST, CONTROLLER_PORT))
+        s.send(json.dumps({"type": "file_list_request", "HOST": NODE_HOST, "PORT": NODE_PORT, "NODE_ID": NODE_ID}).encode('utf-8'))
+        handle_client_connection(s)
+    except socket.error as e:
+        print(f" fileSocket error: {e}")
+
 if __name__ == '__main__':
-    check_files()
-    print("FILES:", FILES)
+    FILES = check_files()
+    print("Files on the node:", FILES)
     system_details = {}
+
     if os.path.isfile(tempfile.gettempdir() + "/" + NODE_ID + ".json"):
         with open(tempfile.gettempdir() + "/" + NODE_ID + ".json") as f:
             system_details = json.load(f)
@@ -468,7 +416,7 @@ if __name__ == '__main__':
     listener_thread.start()
     if system_details == {}:
         if CONTROLLER_ID != NODE_ID:
-            file_update()
+            file_update(CONTROLLER_HOST, CONTROLLER_PORT, NODE_HOST, NODE_PORT, NODE_ID)
             send_node_info_to_controller()
         else:
             IS_CONTROLLER = True
@@ -480,6 +428,6 @@ if __name__ == '__main__':
         else:
             NODES = system_details["NODES"]
             print("Joining the system quietly")
-            file_update()
+            file_update(CONTROLLER_HOST, CONTROLLER_PORT, NODE_HOST, NODE_PORT, NODE_ID)
             send_node_info_to_controller()
 
