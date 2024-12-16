@@ -37,6 +37,42 @@ def send_playback_request_to_node(node, playback_message):
         print(f"Error communicating with {node['NODE_ID']}: {e}")
         s.close()
 
+def send_stop_request_to_node(node, stop_message):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((node['HOST'], node['PORT']))
+        s.sendall(json.dumps(stop_message).encode('utf-8'))
+        print(f"Sent playback stop to {node['NODE_ID']}")
+
+        s.close()
+    except socket.error as e:
+        print(f"Error communicating with {node['NODE_ID']}: {e}")
+        s.close()
+
+
+def initiate_stop_playback(node_id, node_host, node_port, NODES_LIST):
+    global NODES
+    global receive_ack
+    global active_playback_request_threads
+    global playback_request_thread_completed
+
+    receive_ack=[]
+    NODES = NODES_LIST
+
+    print("Initiating stopping playback")
+    stop_message = {
+        "type": "stop_playback",
+    }
+
+    # Create a thread for each node
+    threads = []
+    for node in NODES_LIST:
+        thread = threading.Thread(target=send_stop_request_to_node, args=(node, stop_message))
+        thread.start()
+        threads.append(thread)
+    handle_stop_playback()
+
+
 def initiate_playback(content_id, action, scheduled_time, node_id, node_host, node_port, NODES_LIST):
     global NODES
     global receive_ack
@@ -180,3 +216,13 @@ def handle_confirm_playback(data):
     #execute_playback(data["action"], data["content_id"])  #  Need to add this function on how to run the video
     #for now just printing
     print("Executing the Playback Function.")
+
+def handle_stop_playback():
+    global CURRENT_ACTION
+    global CURRENT_PLAYBACK_TIME
+    global CURRENT_CONTENT_ID
+
+    CURRENT_ACTION=""
+    CURRENT_CONTENT_ID = ""
+    CURRENT_PLAYBACK_TIME = ""
+    print("Stopped playback, state cleared")

@@ -6,7 +6,7 @@ import uuid
 import sys
 import tempfile
 import os
-from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback
+from utils.synchronization_utils import initiate_playback, handle_init_playback, handle_playback_ack, handle_confirm_playback, initiate_stop_playback, handle_stop_playback
 from file_operations import send_file_list, handle_file_update, handle_send_file, handle_ask_file, check_files
 
 with open('config.json', 'r') as config_file:
@@ -78,13 +78,15 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_play":
         initiate_playback(data["content_id"], data["action"], data["time_after"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
-        pass
+        initiate_stop_playback(node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "init_playback":
         handle_init_playback(data)
     elif data["type"] == "ack_playback":
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)
+    elif data["type"] == "stop_playback":
+        handle_stop_playback()
     elif data["type"] == "health_check":
         send_health_ack(data, client_socket)
     elif data["type"] == "leader_election":
