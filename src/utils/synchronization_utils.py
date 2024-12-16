@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import time
+import urllib.request
 
 NODES = []
 receive_ack =[]
@@ -179,3 +180,5 @@ def handle_confirm_playback(data):
     #execute_playback(data["action"], data["content_id"])  #  Need to add this function on how to run the video
     #for now just printing
     print("Executing the Playback Function.", time.time())
+    contents = urllib.request.urlopen("https://timeapi.io/api/time/current/zone?timeZone=Europe%2FAmsterdam").read()
+    print(contents)
