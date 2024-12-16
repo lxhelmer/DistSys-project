@@ -79,12 +79,14 @@ def read_data(data, client_socket: socket.socket):
     elif data["type"] == "client_pause":
         pass
     elif data["type"] == "client_play":
+        print("----------------------Received client play request at", time.time())
         initiate_playback(data["content_id"], data["action"], data["time_after"], node_id=NODE_ID, node_host=NODE_HOST, node_port=NODE_PORT, NODES_LIST=NODES)
     elif data["type"] == "client_stop":
         pass
     elif data["type"] == "init_playback":
         handle_init_playback(data)
     elif data["type"] == "ack_playback":
+        print("----------------------Received play ack at", time.time())
         handle_playback_ack(data)
     elif data["type"] == "confirm_playback":
         handle_confirm_playback(data)

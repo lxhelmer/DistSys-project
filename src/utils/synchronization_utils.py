@@ -46,7 +46,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     receive_ack=[]
     NODES = NODES_LIST
 
-    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}")
+    print(f"Initiating playback: {action} for content {content_id} at {scheduled_time}", time.time())
     playback_message = {
         "type": "init_playback",
         "sender_id": "controller",
@@ -74,7 +74,7 @@ def initiate_playback(content_id, action, scheduled_time, node_id, node_host, no
     if not playback_request_thread_completed.wait(timeout=30):  # Wait up to 10 seconds
         print("Timeout waiting for all threads to complete.")
 
-    print("All threads have completed or timed out!", time.time())
+    print("All threads have completed or timed out!")
     threading.Timer(10, initiate_confirmation, args=(content_id, action, scheduled_time)).start()
 
 def handle_init_playback(data):
@@ -105,7 +105,6 @@ def handle_init_playback(data):
         s.close()
     except socket.error as e:
         print(f"Error sending ack_playback to controller: {e}")
-
 
 def handle_playback_ack(data):
     global active_playback_request_threads
@@ -138,7 +137,7 @@ def initiate_confirmation(content_id, action, scheduled_time):
 def confirm_playback(content_id, action, scheduled_time):
     global NODES
 
-    print(f"Confirming playback: {action} for content {content_id} at {scheduled_time}")
+    print(f"Confirming playback: {action} for content {content_id} at {scheduled_time}", time.time())
     confirmation_message = {
         "type": "confirm_playback",
         "sender_id": "controller",
@@ -179,4 +178,4 @@ def handle_confirm_playback(data):
     CURRENT_PLAYBACK_TIME = data["scheduled_time"]
     #execute_playback(data["action"], data["content_id"])  #  Need to add this function on how to run the video
     #for now just printing
-    print("Executing the Playback Function.")
+    print("Executing the Playback Function.", time.time())
